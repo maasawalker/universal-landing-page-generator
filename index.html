@@ -805,18 +805,15 @@ document.getElementById('exampleDropdown').addEventListener('click', function(e)
   preview.setAttribute('sandbox', 'allow-same-origin allow-scripts');
   preview.removeAttribute('src');
 
-  // Apply brand kit
+  // Apply brand kit IN MEMORY ONLY — do NOT save to localStorage (examples are ephemeral)
   Object.assign(brandKit, ex.brandKit);
-  saveBrandKit();
   applyBrandKit();
-  // Apply form fields — marked autofilled (yellow) so user knows they're from the example
+  // Apply form fields IN MEMORY ONLY — do NOT save to session
   const v = ex.form;
   Object.entries(v).forEach(([id, val]) => {
     const el = document.getElementById(id);
     if (el) { el.value = val; el.classList.remove('reviewed'); el.classList.add('autofilled'); }
   });
-  // Save session so these persist (user can then edit and override)
-  saveSession();
   // Load persona preset
   document.getElementById('personaText').value = brandKit.voice;
   document.getElementById('personaText').style.color = '#b0aeac';
@@ -839,16 +836,19 @@ document.getElementById('resetBtn').addEventListener('click', () => {
 document.getElementById('editBrandBtn').addEventListener('click', () => {
   document.getElementById('brandWizard').classList.remove('hidden');
   document.getElementById('appShell').classList.add('hidden');
-  // Pre-fill wizard from current kit
-  document.getElementById('wCompany').value = brandKit.company || '';
-  document.getElementById('wTagline').value = brandKit.tagline || '';
-  document.getElementById('wColorPrimary').value = brandKit.primaryColor || '#FF4B32';
-  document.getElementById('wColorPrimaryHex').value = brandKit.primaryColor || '#FF4B32';
-  document.getElementById('wColorDark').value = brandKit.darkColor || '#1D1E20';
-  document.getElementById('wColorDarkHex').value = brandKit.darkColor || '#1D1E20';
-  document.getElementById('wColorLight').value = brandKit.lightColor || '#F3F2F1';
-  document.getElementById('wColorLightHex').value = brandKit.lightColor || '#F3F2F1';
-  document.getElementById('wVoice').value = brandKit.voice || '';
+  // Pre-fill wizard from STORED brand kit (localStorage), not runtime — so loading an example
+  // doesn't bleed into the wizard fields when the user clicks Edit
+  let storedKit = {};
+  try { const raw = localStorage.getItem(BRAND_KEY); if (raw) storedKit = JSON.parse(raw); } catch(_) {}
+  document.getElementById('wCompany').value = storedKit.company || '';
+  document.getElementById('wTagline').value = storedKit.tagline || '';
+  document.getElementById('wColorPrimary').value = storedKit.primaryColor || '#FF4B32';
+  document.getElementById('wColorPrimaryHex').value = storedKit.primaryColor || '#FF4B32';
+  document.getElementById('wColorDark').value = storedKit.darkColor || '#1D1E20';
+  document.getElementById('wColorDarkHex').value = storedKit.darkColor || '#1D1E20';
+  document.getElementById('wColorLight').value = storedKit.lightColor || '#F3F2F1';
+  document.getElementById('wColorLightHex').value = storedKit.lightColor || '#F3F2F1';
+  document.getElementById('wVoice').value = storedKit.voice || '';
 });
 
 function showApp() {
@@ -1546,9 +1546,17 @@ document.getElementById('parseBtn').addEventListener('click', async () => {
   parseBtn.disabled = true;
   parseBtn.textContent = '⏳ Parsing...';
   const text = document.getElementById('jdText').value.trim();
+
+  function showParseError(msg) {
+    status.style.color = '#c62828';
+    status.style.fontSize = '12px';
+    status.style.fontWeight = '600';
+    status.textContent = '⚠ ' + msg;
+    console.error('[Parse error]', msg);
+  }
+
   if (!text) {
-    status.style.color = 'var(--brand-primary)';
-    status.textContent = '← Paste your JD text in the box above first';
+    showParseError('Paste your JD text in the box above first');
     parseBtn.disabled = false; parseBtn.textContent = '✦ Parse & autofill form';
     return;
   }
@@ -1556,41 +1564,43 @@ document.getElementById('parseBtn').addEventListener('click', async () => {
   if (isLocal) {
     const localKey = (document.getElementById('openaiKey')?.value||'').trim();
     if (!localKey) {
-      status.style.color = 'var(--brand-primary)';
-      status.textContent = '← Enter your Groq key (gsk_...) in the dev field above first';
+      showParseError('Enter your Groq key (gsk_...) in the dev field above first');
       document.getElementById('devKeyField').scrollIntoView({behavior:'smooth', block:'center'});
       parseBtn.disabled = false; parseBtn.textContent = '✦ Parse & autofill form';
       return;
     }
   }
   const personaContext = document.getElementById('personaText').value.trim();
-  status.style.color = '#888'; status.textContent = '⏳ Thinking like a recruiter…';
+  status.style.color = '#888'; status.style.fontSize = '11px'; status.style.fontWeight = 'normal';
+  status.textContent = '⏳ Thinking like a recruiter…';
+  console.log('[Parse] Starting parse. isLocal:', isLocal, 'text length:', text.length);
   try {
     let filled;
     if (isLocal) {
       const localKey = (document.getElementById('openaiKey')?.value||'').trim();
+      console.log('[Parse] Calling Groq directly, key starts with:', localKey.slice(0,8));
       filled = await parseWithAI(text, localKey, personaContext);
     } else {
+      console.log('[Parse] Calling /api/parse serverless function');
       const resp = await fetch('/api/parse', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text, personaContext, systemPrompt: buildSystemPrompt()})});
-      if (!resp.ok) { const err = await resp.json(); throw new Error(err.error||'Server error'); }
+      console.log('[Parse] Response status:', resp.status);
+      if (!resp.ok) { const err = await resp.json(); throw new Error(err.error||'Server error ' + resp.status); }
       filled = await resp.json();
     }
+    console.log('[Parse] Success, keys returned:', Object.keys(filled || {}).length);
     const count = applyParsed(filled);
     showCompletenessScore();
     showLinkedInFinder(filled.jobTitle || document.getElementById('jobTitle').value);
+    status.style.color = '#2e7d32'; status.style.fontSize = '11px'; status.style.fontWeight = 'normal';
+    status.textContent = `✓ ${count} fields filled`;
     updatePreview();
   } catch(e) {
-    status.style.color = 'var(--brand-primary)';
-    if (isLocal && e.message && e.message.includes('Groq key')) {
-      status.textContent = 'Add your Groq key (gsk_...) to the dev field above, then try again.';
-    } else {
-      status.style.color = '#888';
-      status.textContent = `Error: ${e.message || 'unknown'} — try again`;
-      const jt = text.match(/^(.{4,60}?)(?:\n|$)/m);
-      if (jt) { const el=document.getElementById('jobTitle'); if(el&&!el.value){el.value=jt[1].trim();el.classList.add('autofilled');} }
-      showCompletenessScore();
-      updatePreview();
-    }
+    console.error('[Parse] Error:', e);
+    showParseError(e.message || 'Unknown error — check browser console (Cmd+Option+I)');
+    const jt = text.match(/^(.{4,60}?)(?:\n|$)/m);
+    if (jt) { const el=document.getElementById('jobTitle'); if(el&&!el.value){el.value=jt[1].trim();el.classList.add('autofilled');} }
+    showCompletenessScore();
+    updatePreview();
   } finally {
     parseBtn.disabled = false;
     parseBtn.textContent = '✦ Parse & autofill form';
