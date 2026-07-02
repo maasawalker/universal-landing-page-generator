@@ -1,0 +1,1800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recruiting Page Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<!-- Example assets: Klaviyo logo, font-face, Amazon logo + fonts -->
+<script>
+(function(){
+  ['assets/example-assets.js','assets/amazon/amazon-fonts.js'].forEach(function(src){
+    var s=document.createElement('script');s.src=src;s.async=true;
+    document.head.appendChild(s);
+  });
+})();
+</script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  /* Brand kit variables — overridden by JS from localStorage */
+  --brand-primary:#FF4B32;
+  --brand-dark:#1D1E20;
+  --brand-light:#F3F2F1;
+  --brand-white:#FFFFFF;
+  --brand-font:'Instrument Sans',sans-serif;
+  --brand-font-headline:'Instrument Sans',sans-serif;
+  /* UI chrome stays neutral */
+  --ui-border:#E5E4E3;
+  --ui-muted:#888;
+}
+body{font-family:'Instrument Sans',sans-serif;background:var(--brand-light);height:100vh;overflow:hidden;display:flex;flex-direction:column}
+
+/* ── Brand Setup Wizard ── */
+#brandWizard{position:fixed;inset:0;background:var(--brand-dark);z-index:200;display:flex;align-items:center;justify-content:center;padding:24px}
+#brandWizard.hidden{display:none}
+.wizard-panel{background:white;border-radius:8px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column}
+.wizard-header{background:var(--brand-dark);padding:28px 32px 24px;border-radius:8px 8px 0 0}
+.wizard-logo-area{height:28px;margin-bottom:16px;display:flex;align-items:center}
+.wizard-logo-placeholder{font-family:'Instrument Sans',sans-serif;font-size:18px;font-weight:700;color:white;letter-spacing:-.01em}
+.wizard-title{font-size:22px;font-weight:600;color:white;margin-bottom:6px}
+.wizard-sub{font-size:14px;color:rgba(255,255,255,.55);line-height:1.5}
+.wizard-body{padding:28px 32px;display:flex;flex-direction:column;gap:20px}
+.wizard-section-title{font-size:11px;font-weight:600;color:#aaa;text-transform:uppercase;letter-spacing:.06em;margin-bottom:-8px}
+.w-field{display:flex;flex-direction:column;gap:5px}
+.w-field label{font-size:11px;font-weight:500;color:#666;text-transform:uppercase;letter-spacing:.04em}
+.w-field input,.w-field textarea{border:1px solid var(--ui-border);border-radius:4px;padding:9px 12px;font-family:'Instrument Sans',sans-serif;font-size:13px;color:#1D1E20;outline:none;transition:border-color .15s}
+.w-field input:focus,.w-field textarea:focus{border-color:var(--brand-primary)}
+.w-field textarea{min-height:80px;resize:vertical;line-height:1.5}
+.w-field-hint{font-size:11px;color:#aaa;line-height:1.5}
+.w-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.color-row{display:flex;gap:10px;align-items:center}
+.color-picker-wrap{display:flex;align-items:center;gap:8px;flex:1;border:1px solid var(--ui-border);border-radius:4px;padding:7px 10px}
+.color-picker-wrap input[type=color]{width:28px;height:28px;border:none;padding:0;background:none;cursor:pointer;border-radius:3px}
+.color-picker-wrap input[type=text]{border:none;font-family:'DM Mono',monospace;font-size:12px;color:#555;outline:none;width:80px}
+.file-btn{display:inline-flex;align-items:center;gap:6px;background:var(--brand-light);border:1px solid var(--ui-border);border-radius:4px;padding:8px 14px;font-size:12px;font-weight:500;color:#555;cursor:pointer;transition:all .15s}
+.file-btn:hover{background:#e8e6e4}
+.file-preview{font-size:11px;color:#2e7d32;margin-top:4px}
+.wizard-footer{padding:20px 32px 28px;border-top:1px solid var(--ui-border);display:flex;gap:10px;align-items:center}
+.btn-setup-save{background:var(--brand-primary);color:white;border:none;border-radius:4px;padding:11px 28px;font-family:'Instrument Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .15s}
+.btn-setup-save:hover{opacity:.88}
+.btn-skip{font-size:13px;color:#aaa;background:none;border:none;cursor:pointer;padding:8px}
+.btn-skip:hover{color:#555}
+.url-row{display:flex;gap:8px}
+.url-row input{flex:1}
+.btn-detect{background:var(--brand-dark);color:white;border:none;border-radius:4px;padding:9px 16px;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;transition:opacity .15s}
+.btn-detect:hover{opacity:.85}
+#detectStatus{font-size:11px;color:#888;margin-top:4px;min-height:14px}
+
+/* ── App shell (hidden until wizard done) ── */
+#appShell{display:flex;flex-direction:column;flex:1;overflow:hidden}
+#appShell.hidden{display:none}
+.app-header{background:var(--brand-dark);padding:0 20px;height:52px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.app-logo-area{display:flex;align-items:center;gap:10px}
+.app-logo-img{height:22px;width:auto;display:none}
+.app-logo-text{font-size:16px;font-weight:700;color:white;letter-spacing:-.01em}
+.app-title{font-size:13px;color:rgba(255,255,255,.45);font-weight:500}
+.header-actions{display:flex;gap:8px;align-items:center}
+.btn-brand{background:rgba(255,255,255,.1);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.15);border-radius:2px;padding:6px 14px;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s}
+.btn-brand:hover{background:rgba(255,255,255,.18);color:white}
+.btn-copy{background:var(--brand-primary);color:white;border:none;border-radius:2px;padding:7px 16px;font-size:13px;font-weight:500;cursor:pointer;transition:opacity .15s}
+.btn-copy:hover{opacity:.88}
+.btn-copy.copied{background:#2e7d32}
+.app-body{display:flex;flex:1;overflow:hidden}
+
+/* ── Form panel ── */
+.form-panel{width:400px;flex-shrink:0;background:white;border-right:1px solid var(--ui-border);overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:4px}
+.form-section-label{font-family:'Instrument Sans',sans-serif;font-size:14px;font-weight:600;color:var(--brand-dark);padding:14px 0 8px;border-bottom:2px solid var(--brand-primary);margin-bottom:10px;margin-top:10px;display:flex;align-items:center;justify-content:space-between;letter-spacing:-.01em}
+.section-toggle{display:flex;align-items:center;gap:5px;cursor:pointer;font-size:9px;color:#aaa;font-weight:400;letter-spacing:.04em;text-transform:uppercase}
+.toggle-switch{position:relative;width:28px;height:16px;flex-shrink:0}
+.toggle-switch input{opacity:0;width:0;height:0;position:absolute}
+.toggle-slider{position:absolute;inset:0;background:#ddd;border-radius:100px;transition:.2s}
+.toggle-slider::before{content:'';position:absolute;width:12px;height:12px;left:2px;bottom:2px;background:white;border-radius:50%;transition:.2s}
+.toggle-switch input:checked+.toggle-slider{background:var(--brand-primary)}
+.toggle-switch input:checked+.toggle-slider::before{transform:translateX(12px)}
+.section-hidden{opacity:.35;pointer-events:none;user-select:none}
+.field{margin-bottom:8px}
+.field label{display:block;font-size:10px;font-weight:500;color:#888;margin-bottom:3px;text-transform:uppercase;letter-spacing:.04em}
+.field input,.field textarea{width:100%;border:1px solid var(--ui-border);border-radius:3px;padding:7px 9px;font-family:'Instrument Sans',sans-serif;font-size:12px;color:#b0aeac;background:white;outline:none;transition:border-color .15s,background .2s,color .2s;resize:vertical}
+/* Importer inputs always show black text — users are actively typing here */
+#jdUrl,#jdText,#personaText,#cultureUrl,#cultureText{color:#1D1E20 !important}
+.field input:focus,.field textarea:focus{border-color:var(--brand-primary)}
+.field textarea{min-height:72px;line-height:1.5}
+.field input.autofilled,.field textarea.autofilled{background:#fffbdb;border-color:#e8c800;color:#1D1E20}
+.field input.reviewed,.field textarea.reviewed{background:white;border-color:var(--ui-border);color:#1D1E20}
+.field-hint{font-size:10px;color:#aaa;margin-top:2px}
+.field-row{display:flex;gap:8px}
+.field-row .field{flex:1}
+.card-group{background:#fafafa;border:1px solid var(--ui-border);border-radius:6px;padding:10px;margin-bottom:8px}
+.card-group-title{font-size:13px;font-weight:500;color:var(--brand-dark);letter-spacing:-.01em;margin-bottom:8px}
+.field-legend{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;padding:8px 10px;background:#fafafa;border:1px solid var(--ui-border);border-radius:4px}
+.field-legend-item{display:flex;align-items:center;gap:5px;font-size:10px;color:#888}
+.legend-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+
+/* ── Preview panel ── */
+.preview-panel{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.preview-toolbar{background:var(--brand-dark);padding:8px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.preview-label{font-family:'DM Mono',monospace;font-size:10px;color:rgba(255,255,255,.4);letter-spacing:.08em;text-transform:uppercase}
+.preview-btns{display:flex;gap:6px}
+.preview-btn{font-family:'Instrument Sans',sans-serif;font-size:11px;font-weight:500;padding:4px 12px;border-radius:2px;cursor:pointer;transition:all .15s}
+.preview-btn.active{background:var(--brand-primary);color:white;border:none}
+.preview-btn.inactive{background:rgba(255,255,255,.1);color:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.15)}
+.preview-frame-wrap{flex:1;overflow:hidden;display:flex;justify-content:center;background:#666}
+#preview{width:100%;height:100%;border:none;display:block;transition:width .3s}
+</style>
+</head>
+<body>
+
+<!-- ── BRAND SETUP WIZARD ── -->
+<div id="brandWizard">
+  <div class="wizard-panel">
+    <div class="wizard-header">
+      <div class="wizard-logo-area"><span class="wizard-logo-placeholder" id="wizardLogoText">✦ Generator</span></div>
+      <div class="wizard-title">Set up your brand kit</div>
+      <div class="wizard-sub">Takes 2 minutes. Saved to your browser — you only do this once per company.</div>
+    </div>
+    <div class="wizard-body">
+
+      <p class="wizard-section-title">Company basics</p>
+      <div class="w-row">
+        <div class="w-field"><label>Company name</label><input id="wCompany" type="text" placeholder="Acme Corp"></div>
+        <div class="w-field"><label>Tagline (optional)</label><input id="wTagline" type="text" placeholder="e.g. The future of work"></div>
+      </div>
+
+      <div class="w-field">
+        <label>Auto-detect brand from URL <span style="color:#bbb;font-weight:400;text-transform:none">(optional)</span></label>
+        <div class="url-row">
+          <input id="wUrl" type="text" placeholder="https://yourcompany.com/careers">
+          <button class="btn-detect" id="wDetectBtn">Detect →</button>
+        </div>
+        <div id="detectStatus"></div>
+        <div class="w-field-hint">Paste your careers page — we'll try to extract your colors and logo automatically.</div>
+      </div>
+
+      <p class="wizard-section-title">Brand colors</p>
+      <div class="w-row">
+        <div class="w-field">
+          <label>Primary color</label>
+          <div class="color-row">
+            <div class="color-picker-wrap">
+              <input type="color" id="wColorPrimary" value="#FF4B32">
+              <input type="text" id="wColorPrimaryHex" value="#FF4B32" maxlength="7" placeholder="#000000">
+            </div>
+          </div>
+        </div>
+        <div class="w-field">
+          <label>Dark / background color</label>
+          <div class="color-row">
+            <div class="color-picker-wrap">
+              <input type="color" id="wColorDark" value="#1D1E20">
+              <input type="text" id="wColorDarkHex" value="#1D1E20" maxlength="7" placeholder="#000000">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="w-field">
+        <label>Light / background neutral</label>
+        <div class="color-row">
+          <div class="color-picker-wrap" style="max-width:200px">
+            <input type="color" id="wColorLight" value="#F3F2F1">
+            <input type="text" id="wColorLightHex" value="#F3F2F1" maxlength="7" placeholder="#F5F5F5">
+          </div>
+        </div>
+      </div>
+
+      <p class="wizard-section-title">Logo & font</p>
+      <div class="w-row">
+        <div class="w-field">
+          <label>Logo file <span style="color:#bbb;font-weight:400;text-transform:none">(SVG or PNG)</span></label>
+          <label class="file-btn" for="wLogoFile">⬆ Upload logo</label>
+          <input type="file" id="wLogoFile" accept=".svg,.png,.jpg" style="display:none">
+          <div class="file-preview" id="wLogoPreview"></div>
+        </div>
+        <div class="w-field">
+          <label>Brand fonts <span style="color:#bbb;font-weight:400;text-transform:none">(select multiple — .otf/.ttf/.woff2)</span></label>
+          <label class="file-btn" for="wFontFile">⬆ Upload font files</label>
+          <input type="file" id="wFontFile" accept=".otf,.ttf,.woff,.woff2" multiple style="display:none">
+          <div class="file-preview" id="wFontPreview"></div>
+          <div class="w-field-hint">No font? We'll use a clean system font.</div>
+        </div>
+      </div>
+
+      <p class="wizard-section-title">Brand voice</p>
+      <div class="w-field">
+        <label>Describe your brand voice & what candidates care about</label>
+        <textarea id="wVoice" placeholder="e.g. Direct, ambitious, no corporate speak. Candidates care about ownership, impact at scale, and working with smart people. Red flags for them: slow teams, unclear direction, bureaucracy..."></textarea>
+        <div class="w-field-hint">This shapes how the AI writes your hero copy, Why [Company] section, and CTA.</div>
+      </div>
+
+    </div>
+    <div class="wizard-footer">
+      <button class="btn-setup-save" id="wSaveBtn">Save brand kit & start →</button>
+      <button class="btn-skip" id="wSkipBtn">Skip for now</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── APP SHELL ── -->
+<div id="appShell" class="hidden">
+  <div class="app-header">
+    <div class="app-logo-area">
+      <img class="app-logo-img" id="appLogoImg" src="" alt="">
+      <span class="app-logo-text" id="appLogoText">Generator</span>
+      <span class="app-title">Custom Landing Page Generator</span>
+    </div>
+    <div class="header-actions">
+      <button class="btn-brand" id="editBrandBtn">⚙ Edit brand kit</button>
+      <button class="btn-brand" id="resetBtn" title="Clear all stored data and start fresh" style="color:rgba(255,100,80,.7);border-color:rgba(255,100,80,.3);">↺ Reset</button>
+      <div style="position:relative;display:inline-block;">
+        <button class="btn-brand" id="exampleBtn" onclick="document.getElementById('exampleDropdown').style.display=document.getElementById('exampleDropdown').style.display==='block'?'none':'block'">📋 Load example ▾</button>
+        <div id="exampleDropdown" style="display:none;position:absolute;right:0;top:calc(100% + 6px);background:var(--brand-dark);border:1px solid rgba(255,255,255,.15);border-radius:4px;min-width:220px;z-index:200;overflow:hidden;box-shadow:0 8px 24px rgba(0,0,0,.4);">
+          <button data-example="klaviyo" style="width:100%;text-align:left;padding:11px 16px;background:transparent;border:none;color:rgba(255,255,255,.8);font-family:'Instrument Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;display:flex;flex-direction:column;gap:2px;border-bottom:1px solid rgba(255,255,255,.08);" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'">
+            <span>Klaviyo</span>
+            <span style="font-size:11px;color:rgba(255,255,255,.4);font-weight:400;">Senior AI Engineer · live page ↗</span>
+          </button>
+          <button data-example="amazon" style="width:100%;text-align:left;padding:11px 16px;background:transparent;border:none;color:rgba(255,255,255,.8);font-family:'Instrument Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;display:flex;flex-direction:column;gap:2px;" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'">
+            <span>Amazon</span>
+            <span style="font-size:11px;color:rgba(255,255,255,.4);font-weight:400;">— add JD to activate —</span>
+          </button>
+        </div>
+      </div>
+      <button class="btn-copy" id="copyBtn">Copy HTML</button>
+    </div>
+  </div>
+  <div class="app-body">
+    <div class="form-panel" id="formPanel">
+      <!-- Field state legend -->
+      <div class="field-legend">
+        <div class="field-legend-item"><div class="legend-dot" style="background:#e8e6e4;border:1px solid #d0cecc"></div>Template default</div>
+        <div class="field-legend-item"><div class="legend-dot" style="background:#fffbdb;border:1px solid #e8c800"></div>AI-filled — review</div>
+        <div class="field-legend-item"><div class="legend-dot" style="background:white;border:1px solid var(--ui-border)"></div>Edited by you</div>
+      </div>
+
+      <!-- JD IMPORTER + PERSONA -->
+      <div style="background:#fff8f7;border:1px solid #ffd0c8;border-radius:6px;padding:12px;margin-bottom:12px;">
+        <div style="font-size:14px;font-weight:600;color:var(--brand-primary);margin-bottom:10px;letter-spacing:-.01em;">✦ Smart JD importer</div>
+        <div id="devKeyField" style="display:none;background:#fffbdb;border:1px solid #e8c800;border-radius:4px;padding:10px;margin-bottom:8px;">
+          <div style="font-size:11px;font-weight:600;color:#7a6500;margin-bottom:6px;">⚠ Local testing — Groq key required to parse</div>
+          <div class="field" style="margin-bottom:0">
+            <input id="openaiKey" type="password" placeholder="gsk_... (paste your Groq key here)" style="color:#1D1E20 !important;border-color:#e8c800;">
+          </div>
+        </div>
+        <div style="font-size:10px;color:var(--brand-primary);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;font-weight:600;font-family:'Instrument Sans',sans-serif;">Step 1 — Job description</div>
+        <div class="field">
+          <label>URL</label>
+          <div style="display:flex;gap:6px;">
+            <input id="jdUrl" type="text" placeholder="https://yourcompany.com/careers/..." style="flex:1;color:#1D1E20">
+            <button id="fetchBtn" style="background:var(--brand-primary);color:white;border:none;border-radius:3px;padding:7px 12px;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;">Fetch</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Or paste JD text</label>
+          <textarea id="jdText" style="min-height:72px" placeholder="Paste the full job description here..."></textarea>
+        </div>
+        <div style="border-top:1px dashed #ffd0c8;margin:10px 0"></div>
+        <div style="font-size:10px;color:var(--brand-primary);letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;font-weight:600;font-family:'Instrument Sans',sans-serif;">Step 2 — Candidate persona <span style="color:#ccc;font-weight:400">optional</span></div>
+        <!-- Option 1: Quick presets -->
+        <div style="font-size:10px;color:#aaa;font-weight:500;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em;">Option 1 — quick preset</div>
+        <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px;" id="personaPresets">
+          <button data-preset="engineering" style="font-size:11px;font-family:'Instrument Sans',sans-serif;padding:5px 10px;border-radius:100px;border:1px solid var(--ui-border);background:white;cursor:pointer;color:#555;">⚙ Engineering</button>
+          <button data-preset="marketing" style="font-size:11px;font-family:'Instrument Sans',sans-serif;padding:5px 10px;border-radius:100px;border:1px solid var(--ui-border);background:white;cursor:pointer;color:#555;">📣 Marketing</button>
+          <button data-preset="sales" style="font-size:11px;font-family:'Instrument Sans',sans-serif;padding:5px 10px;border-radius:100px;border:1px solid var(--ui-border);background:white;cursor:pointer;color:#555;">💼 Sales</button>
+          <button data-preset="product" style="font-size:11px;font-family:'Instrument Sans',sans-serif;padding:5px 10px;border-radius:100px;border:1px solid var(--ui-border);background:white;cursor:pointer;color:#555;">🗺 Product</button>
+          <button data-preset="people" style="font-size:11px;font-family:'Instrument Sans',sans-serif;padding:5px 10px;border-radius:100px;border:1px solid var(--ui-border);background:white;cursor:pointer;color:#555;">🤝 People</button>
+        </div>
+        <!-- Option 2: AI auto-generate -->
+        <div style="font-size:10px;color:#aaa;font-weight:500;margin-bottom:5px;text-transform:uppercase;letter-spacing:.04em;">Option 2 — AI generates from your JD</div>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">
+          <button id="personaAutoBtn" style="font-family:'Instrument Sans',sans-serif;font-size:12px;font-weight:600;padding:8px 16px;border-radius:3px;border:none;background:var(--brand-dark);color:white;cursor:pointer;white-space:nowrap;flex-shrink:0;">✦ Auto-generate from JD</button>
+          <span style="font-size:11px;color:#aaa;line-height:1.4;">Paste JD text above first, then click — AI writes a persona tailored to this exact role type</span>
+        </div>
+        <div id="personaAutoStatus" style="font-size:10px;color:#888;min-height:12px;margin-bottom:4px;"></div>
+        <div class="field">
+          <label>Or paste persona / EVP notes</label>
+          <textarea id="personaText" style="min-height:60px" placeholder="What does this type of candidate care about? What motivates them?..."></textarea>
+        </div>
+        <div id="personaStatus" style="font-size:10px;color:#2e7d32;min-height:12px;margin-bottom:6px;"></div>
+        <button id="parseBtn" style="width:100%;background:var(--brand-dark);color:white;border:none;border-radius:3px;padding:10px;font-size:13px;font-weight:600;cursor:pointer;letter-spacing:.01em;">✦ Parse & autofill form</button>
+        <div id="parseStatus" style="font-size:11px;color:#888;margin-top:6px;min-height:14px;text-align:center;"></div>
+      </div>
+
+      <div class="form-section-label"><span>Basic info</span></div>
+      <div class="field"><label>Job title</label><input id="jobTitle" type="text" value=""></div>
+      <div class="field-row">
+        <div class="field"><label>Team / department</label><input id="team" type="text" value=""></div>
+        <div class="field"><label>Location</label><input id="location" type="text" value=""></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Salary min</label><input id="salaryMin" type="text" value=""></div>
+        <div class="field"><label>Salary max</label><input id="salaryMax" type="text" value=""></div>
+      </div>
+
+      <div class="form-section-label"><span>Hero</span></div>
+      <div class="field"><label>Headline</label><textarea id="heroHeadline" style="min-height:52px"></textarea><div class="field-hint">Full headline — the Accent phrase below appears highlighted.</div></div>
+      <div class="field"><label>Accent phrase (highlighted color)</label><input id="heroPoppy" type="text"><div class="field-hint">Must match text in headline exactly</div></div>
+      <div class="field"><label>Subtitle</label><textarea id="heroSub"></textarea></div>
+      <div class="field-row">
+        <div class="field"><label>Pill 1</label><input id="pill1" type="text"></div>
+        <div class="field"><label>Pill 2 (optional)</label><input id="pill2" type="text"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Pill 3 (optional)</label><input id="pill3" type="text"></div>
+        <div class="field"><label>Pill 4 (optional)</label><input id="pill4" type="text"></div>
+      </div>
+
+      <div class="form-section-label" data-section="why"><span>Why <span id="whyCompanyLabel">this company</span></span></div>
+      <div class="field"><label>Section title</label><textarea id="whyTitle" style="min-height:44px"></textarea></div>
+      <div class="field"><label>Accent phrase</label><input id="whyTitlePoppy" type="text"></div>
+      <div class="card-group"><div class="card-group-title">Card 1</div>
+        <div class="field"><label>Title</label><input id="why1Title" type="text"></div>
+        <div class="field"><label>Description</label><textarea id="why1Desc" style="min-height:56px"></textarea></div>
+        <div class="field-row"><div class="field"><label>Link 1</label><input id="why1Link1" type="text"></div><div class="field"><label>Link 2</label><input id="why1Link2" type="text"></div></div>
+      </div>
+      <div class="card-group"><div class="card-group-title">Card 2</div>
+        <div class="field"><label>Title</label><input id="why2Title" type="text"></div>
+        <div class="field"><label>Description</label><textarea id="why2Desc" style="min-height:56px"></textarea></div>
+        <div class="field-row"><div class="field"><label>Link 1</label><input id="why2Link1" type="text"></div><div class="field"><label>Link 2</label><input id="why2Link2" type="text"></div></div>
+      </div>
+      <div class="card-group"><div class="card-group-title">Card 3 <span style="color:#bbb;font-weight:400">— optional</span></div>
+        <div class="field"><label>Title</label><input id="why3Title" type="text"></div>
+        <div class="field"><label>Description</label><textarea id="why3Desc" style="min-height:56px"></textarea></div>
+        <div class="field-row"><div class="field"><label>Link 1</label><input id="why3Link1" type="text"></div><div class="field"><label>Link 2</label><input id="why3Link2" type="text"></div></div>
+      </div>
+      <div class="card-group"><div class="card-group-title">Card 4 <span style="color:#bbb;font-weight:400">— optional</span></div>
+        <div class="field"><label>Title</label><input id="why4Title" type="text"></div>
+        <div class="field"><label>Description</label><textarea id="why4Desc" style="min-height:56px"></textarea></div>
+        <div class="field-row"><div class="field"><label>Link 1</label><input id="why4Link1" type="text"></div><div class="field"><label>Link 2</label><input id="why4Link2" type="text"></div></div>
+      </div>
+
+      <div class="form-section-label" data-section="ticker"><span>Ticker</span></div>
+      <div class="field"><label>Phrase 1 (required)</label><input id="ticker1" type="text" value=""></div>
+      <div class="field"><label>Phrase 2 (optional)</label><input id="ticker2" type="text" value=""></div>
+      <div class="field"><label>Phrase 3 (optional)</label><input id="ticker3" type="text" value=""></div>
+      <div class="field"><label>Phrase 4 (optional)</label><input id="ticker4" type="text" value=""></div>
+
+      <div class="form-section-label" data-section="role"><span>Role details</span></div>
+      <div class="field"><label>What you're building (one per line)</label><textarea id="building" style="min-height:100px"></textarea></div>
+      <div class="field"><label>How you'll spend your time (one per line)</label><textarea id="time" style="min-height:100px"></textarea></div>
+
+      <div class="form-section-label" data-section="stack"><span>Skills</span></div>
+      <div style="font-size:10px;color:#aaa;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;font-weight:500;">Technical skills <span style="color:#ccc">— leave blank to hide</span></div>
+      <div class="field"><label>All tags (comma-separated)</label><input id="techTags" type="text"></div>
+      <div class="field"><label>Highlighted tags</label><input id="techHighlight" type="text"><div class="field-hint">These appear bold</div></div>
+      <div style="font-size:10px;color:#aaa;letter-spacing:.06em;text-transform:uppercase;margin:10px 0 6px;font-weight:500;">Soft skills <span style="color:#ccc">— optional</span></div>
+      <div class="field"><label>All tags (comma-separated)</label><input id="softSkills" type="text"></div>
+
+      <div class="form-section-label" data-section="quals"><span>Who you are</span></div>
+      <div class="field"><label>Required (one per line)</label><textarea id="required" style="min-height:100px"></textarea></div>
+      <div class="field"><label>Nice to have (one per line)</label><textarea id="niceToHave" style="min-height:72px"></textarea></div>
+
+      <div class="form-section-label" data-section="culture"><span>Culture cards</span></div>
+      <div class="field"><label>Section title</label><input id="cultureTitle" type="text" value="Life at" placeholder="e.g. Life at Amazon"></div>
+      <div class="field"><label>Section subtitle</label><textarea id="cultureSubtitle" style="min-height:44px" placeholder="The values we work by — and what it actually means to work here."></textarea></div>
+      <!-- Culture source importer -->
+      <div style="background:#f0fff4;border:1px solid #b7ebc4;border-radius:6px;padding:12px;margin-bottom:12px;">
+        <div style="font-size:13px;font-weight:600;color:#2e7d32;margin-bottom:10px;letter-spacing:-.01em;">✦ Generate from culture content</div>
+        <div class="field">
+          <label>Culture / values page URL (optional)</label>
+          <div style="display:flex;gap:6px;">
+            <input id="cultureUrl" type="text" placeholder="https://yourcompany.com/culture" style="flex:1;color:#1D1E20;">
+            <button id="cultureFetchBtn" style="background:#2e7d32;color:white;border:none;border-radius:3px;padding:7px 12px;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;">Fetch</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Or paste culture / values / EVP content</label>
+          <textarea id="cultureText" style="min-height:80px" placeholder="Paste your company's culture page, values, leadership principles, or EVP content here..."></textarea>
+        </div>
+        <button id="generateCultureBtn" style="width:100%;background:#1D1E20;color:white;border:none;border-radius:3px;padding:9px;font-family:'Instrument Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;margin-top:4px;">✦ Generate 4 culture cards with AI</button>
+        <div id="cultureStatus" style="font-size:11px;color:#888;margin-top:6px;min-height:14px;text-align:center;"></div>
+      </div>
+      <div class="card-group"><div class="card-group-title">Card 1</div>
+        <div class="field"><label>Headline</label><input id="cult1Title" type="text"></div>
+        <div class="field"><label>Quote</label><textarea id="cult1Quote" style="min-height:56px"></textarea></div>
+        <div class="field"><label>Highlighted phrase</label><input id="cult1Highlight" type="text"></div>
+      </div>
+      <div class="card-group"><div class="card-group-title">Card 2</div>
+        <div class="field"><label>Headline</label><input id="cult2Title" type="text"></div>
+        <div class="field"><label>Quote</label><textarea id="cult2Quote" style="min-height:56px"></textarea></div>
+        <div class="field"><label>Highlighted phrase</label><input id="cult2Highlight" type="text"></div>
+      </div>
+      <div class="card-group"><div class="card-group-title">Card 3 <span style="color:#bbb;font-weight:400">— optional</span></div>
+        <div class="field"><label>Headline</label><input id="cult3Title" type="text"></div>
+        <div class="field"><label>Quote</label><textarea id="cult3Quote" style="min-height:56px"></textarea></div>
+        <div class="field"><label>Highlighted phrase</label><input id="cult3Highlight" type="text"></div>
+      </div>
+      <div class="card-group"><div class="card-group-title">Card 4 <span style="color:#bbb;font-weight:400">— optional</span></div>
+        <div class="field"><label>Headline</label><input id="cult4Title" type="text"></div>
+        <div class="field"><label>Quote</label><textarea id="cult4Quote" style="min-height:56px"></textarea></div>
+        <div class="field"><label>Highlighted phrase</label><input id="cult4Highlight" type="text"></div>
+      </div>
+
+      <div class="form-section-label" data-section="quotes"><span>Quotes</span></div>
+      <div id="quotesFormList"></div>
+      <button id="addQuoteBtn" style="width:100%;border:1px dashed var(--ui-border);background:transparent;border-radius:4px;padding:9px;font-family:'Instrument Sans',sans-serif;font-size:12px;color:#888;cursor:pointer;margin-bottom:8px;">+ Add another quote</button>
+      <div id="liFinderBox" style="display:none;background:#f0f7ff;border:1px solid #c2d8f5;border-radius:6px;padding:12px;margin-bottom:10px;">
+        <div style="font-size:13px;font-weight:600;color:#2d6bc4;margin-bottom:8px;">⟐ Find testimonial candidates</div>
+        <p style="font-size:11px;color:#555;line-height:1.6;margin-bottom:10px;">Search for current employees who could give a quote.</p>
+        <div id="liSearchLinks" style="display:flex;flex-direction:column;gap:6px;"></div>
+        <button id="dmCopyBtn" style="width:100%;margin-top:10px;background:white;border:1px solid #c2d8f5;border-radius:4px;padding:8px;font-size:12px;font-weight:500;color:#2d6bc4;cursor:pointer;">📋 Copy outreach DM</button>
+        <div id="dmStatus" style="font-size:10px;color:#2e7d32;margin-top:4px;min-height:12px;text-align:center;"></div>
+      </div>
+
+      <div class="form-section-label" data-section="cta"><span>CTA</span></div>
+      <div class="field"><label>CTA title</label><input id="ctaTitle" type="text"></div>
+      <div class="field"><label>CTA subtitle</label><textarea id="ctaSub" style="min-height:56px"></textarea></div>
+
+      <div class="form-section-label" data-section="tracking"><span>Analytics & sharing</span></div>
+      <div class="field"><label>GA4 Measurement ID <span style="color:#bbb;font-weight:400;text-transform:none">(optional)</span></label><input id="ga4Id" type="text" placeholder="G-XXXXXXXXXX"></div>
+      <div class="field">
+        <label>Live page URL <span style="color:#bbb;font-weight:400;text-transform:none">(for UTM links)</span></label>
+        <input id="pageUrl" type="text" placeholder="https://your-page.vercel.app">
+      </div>
+      <div id="utmLinks" style="display:none;background:#fafafa;border:1px solid var(--ui-border);border-radius:6px;padding:12px;margin-top:4px;">
+        <div style="font-size:13px;font-weight:600;color:var(--brand-dark);margin-bottom:10px;">UTM share links</div>
+        <div id="utmLinkList" style="display:flex;flex-direction:column;gap:6px;"></div>
+      </div>
+
+    </div>
+
+    <!-- Preview -->
+    <div class="preview-panel">
+      <div class="preview-toolbar">
+        <span class="preview-label">Live preview</span>
+        <div class="preview-btns">
+          <button class="preview-btn active" id="viewDesktop" onclick="setPreviewWidth('100%')">Desktop</button>
+          <button class="preview-btn inactive" id="viewMobile" onclick="setPreviewWidth('390px')">Mobile</button>
+        </div>
+      </div>
+      <div class="preview-frame-wrap">
+        <iframe id="preview" sandbox="allow-same-origin allow-scripts"></iframe>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Example data ──
+const EXAMPLES = {
+  get klaviyo() {
+    const logo = typeof window.KLAVIYO_LOGO !== 'undefined' ? window.KLAVIYO_LOGO : '';
+    const fontFace = typeof window.KLAVIYO_FONT_FACE !== 'undefined' ? window.KLAVIYO_FONT_FACE : '';
+    return {
+    brandKit: {
+      company: 'Klaviyo', tagline: 'The Autonomous B2C CRM',
+      primaryColor: '#FF4B32', darkColor: '#1D1E20', lightColor: '#F3F2F1',
+      voice: 'Direct, bold, empowering. Engineers here care about scale (196K+ customers, 7.3B profiles), AI systems that run autonomously, peer quality, ownership without bureaucracy. They respond to honesty, not corporate speak. Red flags: slow teams, unclear direction, no ownership. Key motivators: real technical scale, shaping architecture, hard problems that matter.',
+      fonts: [], fontDataUrl: '', logoDataUrl: logo,
+      customFontFace: fontFace, fontName: 'KlaviyoFont'
+    },
+    form: {
+      jobTitle:'Senior AI Engineer', team:'Engineering', location:'Boston, MA',
+      salaryMin:'$148,000', salaryMax:'$222,000',
+      heroHeadline:'Build the AI that runs itself.', heroPoppy:'runs itself.',
+      heroSub:"Most engineers work with AI tools. Here you build the infrastructure that makes AI act autonomously — at the scale of 196K+ businesses and billions of consumer interactions.",
+      pill1:'$148K – $222K base', pill2:'Backend-heavy · AI/ML',
+      ticker1:'196K+ customers worldwide', ticker2:'7.3B customer profiles', ticker3:'1.6B avg API calls daily', ticker4:'Agentic AI at scale',
+      whyTitle:'Agentic AI and automation, at scale, for 196K+ businesses.', whyTitlePoppy:'at scale,',
+      why1Title:'Training data no one else has', why1Desc:'Billions of consumer profiles. Hundreds of billions of customer messages and the conversion data that follows. Your models learn from real outcomes at a scale most AI engineers never get close to.', why1Link1:'196K+ customers', why1Link2:'Production AI at scale',
+      why2Title:'Leveled on engineering scope, not AI years', why2Desc:'We look at production ownership, system complexity, and what you\'ve built that actually ran. Direct AI experience matters — it\'s not the only thing.', why2Link1:'Scope-based leveling', why2Link2:'AI system design interview',
+      why3Title:'Software that runs itself', why3Desc:'We\'re building toward AI that optimizes itself based on outcomes. You\'ll help build the infrastructure that makes Klaviyo\'s agents run without someone watching them.', why3Link1:'Agentic architecture', why3Link2:'Multiple orgs hiring',
+      why4Title:'Impact at real scale', why4Desc:'196K+ customers means every backend decision has a real blast radius. The infrastructure you build here touches more businesses than most engineers reach in a full career.', why4Link1:'Powering top brands', why4Link2:'350+ integrations',
+      building:`Backend systems that power agentic AI products at scale\nData pipelines that feed ML models the right training signal\nModel-serving infrastructure that makes AI reliable in production\nThe scaffolding for Klaviyo's agentic architecture\nOwning architecture decisions on AWS and Kubernetes`,
+      time:`Designing async pipelines and distributed systems\nBuilding and shipping generative AI applications into production\nCreating evals that tell you when your AI is actually working\nCollaborating directly with PMs, ML engineers, and data scientists`,
+      techTags:'Python, FastAPI, Django, Apache Spark, Kafka, Celery, Redis, SQLAlchemy, AWS, Kubernetes, Generative AI, Agentic AI', techHighlight:'Python, FastAPI, Generative AI, Agentic AI',
+      required:`5+ years backend engineering with production ownership\nHands-on production experience with generative AI or agentic AI\nProficient in Python — FastAPI or Django preferred\nExperience building human and automated evals for AI model quality\nDeep async processing: Kafka, Celery, SQS, Redis\nCloud-native on AWS with Kubernetes and CI/CD`,
+      niceToHave:`Experience training and deploying ML models in production\nBackground in reinforcement learning\nComfortable collaborating directly with PMs and customers`,
+      softSkills:'Ownership, High autonomy, Curiosity, Systems thinking, Ambiguity tolerance',
+      ctaTitle:"You got what it takes. We got the scale.", ctaSub:'Join the team building agentic systems at scale — with people who are just as ambitious as you, and who don\'t do "good enough."',
+      cultureTitle:'Built different', cultureSubtitle:'This isn\'t for everyone. Here\'s who thrives.'
+    }
+  };},
+  get amazon() {
+    return {
+      brandKit: {
+        company: 'Amazon', tagline: 'Work hard. Have fun. Make history.',
+        primaryColor: '#FF9900', darkColor: '#232F3E', lightColor: '#F4F4F4',
+        voice: 'Hourly warehouse and delivery associates care about: reliable pay (up to $22.25/hr), schedule flexibility, physical work in a team environment, benefits on day one, and a clear path to advancement. They are practical, hardworking, and motivated by stability and fair treatment. They respond to: transparency about pay and hours, safety commitments, real benefits (not vague promises), and a sense of belonging. Red flags: bait-and-switch schedules, hidden requirements, corporate buzzwords. Tone: clear, direct, warm, human. No jargon. Lead with pay and schedule. Emphasize team and safety.',
+        fonts: typeof window.AMAZON_FONTS !== 'undefined' ? window.AMAZON_FONTS : [],
+        fontDataUrl: typeof window.AMAZON_FONTS !== 'undefined' && window.AMAZON_FONTS.length ? window.AMAZON_FONTS.find(f=>f.weight===400&&!f.italic)?.dataUrl || '' : '',
+        logoDataUrl: typeof window.AMAZON_LOGO !== 'undefined' ? window.AMAZON_LOGO : ''
+      },
+      form: {
+        jobTitle:'Delivery Station Warehouse Associate', team:'Fulfillment & Operations', location:'Westhampton Beach, NY 11978',
+        salaryMin:'$18.00', salaryMax:'$22.25',
+        heroHeadline:'A job that works around your life.', heroPoppy:'works around your life.',
+        heroSub:"Competitive pay up to $22.25/hr, flexible schedules, and benefits from day one. You'll join a team that moves fast, looks out for each other, and makes sure millions of customers get what they need.",
+        pill1:'Up to $22.25/hr', pill2:'Full-time & part-time',
+        ticker1:'Up to $22.25/hr', ticker2:'Benefits from day one', ticker3:'Flexible schedule options', ticker4:'Career growth programs',
+        whyTitle:"More than a paycheck. Here's what Amazon offers.", whyTitlePoppy:"More than a paycheck.",
+        why1Title:'Pay that shows up', why1Desc:'Earn up to $22.25/hr with Anytime Pay — cash out up to 75% of your earnings immediately after your shift. No waiting for payday.', why1Link1:'Anytime Pay', why1Link2:'Competitive wages',
+        why2Title:'Schedules built for real life', why2Desc:'Full-time, part-time, reduced-time, or flex starting at 4 hours/week. Fixed or flexible — you choose. Overtime communicated in advance.', why2Link1:'4 schedule types', why2Link2:'Fixed or flexible',
+        why3Title:'Benefits that actually matter', why3Desc:'Healthcare, savings options, and peace of mind for you and your family. Plus a $110 Zappos gift code for your first day — closed-toe shoes covered.', why3Link1:'Day-one benefits', why3Link2:'$110 Zappos credit',
+        why4Title:'Room to grow', why4Desc:'Free training and development programs plus tuition support. Amazon has promoted thousands of hourly workers into full-time roles and beyond.', why4Link1:'Career Choice', why4Link2:'Free upskilling',
+        building:`Receive and prepare packages for delivery\nUse smartphones and handheld devices to sort, scan, and organize orders\nBuild, wrap, sort, and transport pallets and packages\nLoad conveyor belts and stage deliveries for drivers\nOperate carts, dollies, and hand trucks to move items`,
+        time:`Work in a fast-paced, active environment with your team\nFollow safety protocols — Amazon provides all protective gear\nStand, walk, push, pull, and lift up to 49 lbs during your shift\nTrack packages and deliveries using Amazon's technology\nCommunicate with team leads about order flow and priorities`,
+        techTags:'Handheld scanners, Smartphone apps, Conveyor systems, Warehouse management systems',
+        techHighlight:'Handheld scanners, Smartphone apps',
+        softSkills:'Reliability, Team player, Attention to detail, Physical stamina, Safety-conscious',
+        required:`18 years or older\nAbility to understand and follow instructions in English\nAble to lift up to 49 pounds\nComfortable standing, walking, pushing, pulling, squatting, and bending during shifts\nAble to use carts, dollies, and hand trucks to move items\nComfortable working in varying temperatures and around moving vehicles`,
+        niceToHave:`Previous warehouse or fulfillment experience\nForklift or pallet jack experience\nFlexibility for overtime shifts`,
+        cultureTitle:'Life at Amazon', cultureSubtitle:'16 Leadership Principles guide everything we do — from how we solve problems to how we treat each other.',
+        cult1Title:'Customer obsession starts here', cult1Quote:'Leaders start with the customer and work backwards. They work vigorously to earn and keep customer trust. Although leaders pay attention to competitors, they obsess over customers.', cult1Highlight:'obsess over customers',
+        cult2Title:'Ownership is expected', cult2Quote:'Leaders are owners. They think long term and don\'t sacrifice long-term value for short-term results. They act on behalf of the entire company, beyond just their own team. They never say "that\'s not my job."', cult2Highlight:"never say \"that's not my job\"",
+        cult3Title:'Bias for action', cult3Quote:'Speed matters in business. Many decisions and actions are reversible and do not need extensive study. We value calculated risk taking.', cult3Highlight:'Speed matters',
+        cult4Title:'Strive to be Earth\'s best employer', cult4Quote:'Leaders work every day to create a safer, more productive, higher performing, more diverse, and more just work environment. They lead with empathy, have fun at work, and make it easy for others to have fun.', cult4Highlight:'lead with empathy',
+        ctaTitle:"Ready to get started? Let's go.", ctaSub:'Apply in minutes. Flexible schedules, day-one pay, and a team that has your back.',
+        ga4Id:'', pageUrl:''
+      }
+    };
+  }
+};
+
+// ── Global state — declared first so nothing references before init ──
+let quoteData = [];
+
+// ── Brand kit state ──
+const BRAND_KEY = 'universal_brand_kit';
+const BRAND_FONTS_KEY = 'universal_brand_fonts';
+const BRAND_LOGO_KEY = 'universal_brand_logo';
+let brandKit = {
+  company: '', tagline: '', primaryColor: '#FF4B32',
+  darkColor: '#1D1E20', lightColor: '#F3F2F1',
+  logoDataUrl: '', logoType: '', fontDataUrl: '', fontName: '',
+  voice: ''
+};
+
+function loadBrandKit() {
+  try {
+    const saved = localStorage.getItem(BRAND_KEY);
+    if (!saved) return false;
+    brandKit = {...brandKit, ...JSON.parse(saved)};
+    // Load large binary data separately
+    try {
+      const savedFonts = localStorage.getItem(BRAND_FONTS_KEY);
+      if (savedFonts) brandKit.fonts = JSON.parse(savedFonts);
+    } catch(e) {}
+    try {
+      const savedLogo = localStorage.getItem(BRAND_LOGO_KEY);
+      if (savedLogo) brandKit.logoDataUrl = savedLogo;
+    } catch(e) {}
+    return true;
+  } catch(e) {}
+  return false;
+}
+
+function saveBrandKit() {
+  // Save text/small data first (always fits)
+  try {
+    const {fonts, fontDataUrl, logoDataUrl, ...small} = brandKit;
+    localStorage.setItem(BRAND_KEY, JSON.stringify(small));
+  } catch(e) {}
+  // Save fonts separately (large binary — may fail silently if too big)
+  try {
+    if (brandKit.fonts && brandKit.fonts.length) {
+      localStorage.setItem(BRAND_FONTS_KEY, JSON.stringify(brandKit.fonts));
+    }
+    if (brandKit.fontDataUrl) localStorage.setItem(BRAND_FONTS_KEY + '_legacy', brandKit.fontDataUrl);
+  } catch(e) { console.warn('Fonts too large for localStorage — re-upload needed on reload'); }
+  // Save logo separately
+  try {
+    if (brandKit.logoDataUrl) localStorage.setItem(BRAND_LOGO_KEY, brandKit.logoDataUrl);
+  } catch(e) { console.warn('Logo too large for localStorage — re-upload needed on reload'); }
+}
+
+function applyBrandKit() {
+  const r = document.documentElement.style;
+  r.setProperty('--brand-primary', brandKit.primaryColor || '#FF4B32');
+  r.setProperty('--brand-dark', brandKit.darkColor || '#1D1E20');
+  r.setProperty('--brand-light', brandKit.lightColor || '#F3F2F1');
+
+  // Font injection
+  let faceEl = document.getElementById('brandFontFace');
+  if (!faceEl) { faceEl = document.createElement('style'); faceEl.id = 'brandFontFace'; document.head.appendChild(faceEl); }
+
+  if (brandKit.customFontFace) {
+    // Pre-built @font-face declarations (e.g. Klaviyo example uses CDN URLs)
+    faceEl.textContent = brandKit.customFontFace;
+    r.setProperty('--brand-font-headline', `'${brandKit.fontName || 'KlaviyoFont'}',system-ui,sans-serif`);
+  } else {
+    const fontFiles = brandKit.fonts && brandKit.fonts.length ? brandKit.fonts : (brandKit.fontDataUrl ? [{dataUrl:brandKit.fontDataUrl,weight:400,italic:false}] : []);
+    if (fontFiles.length) {
+      faceEl.textContent = fontFiles.map(f =>
+        `@font-face{font-family:'BrandFont';src:url('${f.dataUrl}');font-weight:${f.weight};font-style:${f.italic?'italic':'normal'};font-display:swap}`
+      ).join('\n');
+      r.setProperty('--brand-font-headline', "'BrandFont',system-ui,sans-serif");
+    }
+  }
+
+  // Logo in app header
+  const logoImg = document.getElementById('appLogoImg');
+  const logoText = document.getElementById('appLogoText');
+  if (brandKit.logoDataUrl) {
+    logoImg.src = brandKit.logoDataUrl;
+    logoImg.style.display = 'block';
+    logoText.style.display = 'none';
+  } else if (brandKit.company) {
+    logoText.textContent = brandKit.company;
+    logoText.style.display = 'block';
+    logoImg.style.display = 'none';
+  }
+
+  // Why label
+  const whyLabel = document.getElementById('whyCompanyLabel');
+  if (whyLabel) whyLabel.textContent = brandKit.company || 'this company';
+
+  // Culture title — auto-populate with company name if field is empty or still default
+  const cultureTitleEl = document.getElementById('cultureTitle');
+  if (cultureTitleEl && brandKit.company) {
+    const current = cultureTitleEl.value.trim();
+    if (!current || current === 'Life at') {
+      cultureTitleEl.value = 'Life at ' + brandKit.company;
+    }
+  }
+}
+
+// ── Wizard setup ──
+function syncColorPickers() {
+  const pairs = [
+    ['wColorPrimary','wColorPrimaryHex'],
+    ['wColorDark','wColorDarkHex'],
+    ['wColorLight','wColorLightHex'],
+  ];
+  pairs.forEach(([picker, hex]) => {
+    const p = document.getElementById(picker);
+    const h = document.getElementById(hex);
+    p.addEventListener('input', () => { h.value = p.value; });
+    h.addEventListener('input', () => { if (/^#[0-9a-f]{6}$/i.test(h.value)) p.value = h.value; });
+  });
+}
+syncColorPickers();
+
+// File readers for wizard
+document.getElementById('wLogoFile').addEventListener('change', function() {
+  const file = this.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    brandKit.logoDataUrl = e.target.result;
+    brandKit.logoType = file.type;
+    document.getElementById('wLogoPreview').textContent = '✓ ' + file.name;
+    document.getElementById('wizardLogoText').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+});
+
+function detectFontWeight(filename) {
+  const n = filename.toLowerCase();
+  if (n.includes('thin') || n.includes('-100')) return 100;
+  if (n.includes('extralight') || n.includes('extra-light') || n.includes('-200')) return 200;
+  if (n.includes('light') && !n.includes('ultra')) return 300;
+  if (n.includes('medium') || n.includes('-500')) return 500;
+  if (n.includes('semibold') || n.includes('semi-bold') || n.includes('demi') || n.includes('-600')) return 600;
+  if (n.includes('extrabold') || n.includes('extra-bold') || n.includes('-800')) return 800;
+  if (n.includes('black') || n.includes('heavy') || n.includes('-900')) return 900;
+  if (n.includes('bold') || n.includes('-700')) return 700;
+  return 400;
+}
+
+document.getElementById('wFontFile').addEventListener('change', function() {
+  const files = Array.from(this.files); if (!files.length) return;
+  brandKit.fonts = [];
+  let loaded = 0;
+  const preview = document.getElementById('wFontPreview');
+  preview.textContent = 'Loading…';
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const weight = detectFontWeight(file.name);
+      const isItalic = file.name.toLowerCase().includes('italic');
+      brandKit.fonts.push({ dataUrl: e.target.result, weight, italic: isItalic, name: file.name });
+      // Also set fontDataUrl for compatibility (use Regular/400 as primary)
+      if (weight === 400 && !isItalic) {
+        brandKit.fontDataUrl = e.target.result;
+        brandKit.fontName = file.name.replace(/\.[^.]+$/, '').replace(/[-_](regular|400)/i, '');
+      }
+      loaded++;
+      if (loaded === files.length) {
+        // Sort by weight
+        brandKit.fonts.sort((a,b) => a.weight - b.weight || (a.italic ? 1 : -1));
+        preview.textContent = `✓ ${files.length} font file${files.length>1?'s':''} loaded: ${brandKit.fonts.map(f=>f.weight+(f.italic?'i':'')).join(', ')}`;
+        preview.style.color = '#2e7d32';
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+});
+
+// Auto-detect from URL
+document.getElementById('wDetectBtn').addEventListener('click', async () => {
+  const url = document.getElementById('wUrl').value.trim();
+  const detectStatus = document.getElementById('detectStatus');
+  if (!url) return;
+  detectStatus.style.color = '#888';
+  detectStatus.textContent = 'Fetching brand data…';
+
+  let htmlText = '';
+  try {
+    if (!isLocal) {
+      // Production: use serverless function (no CORS)
+      const resp = await fetch('/api/parse', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'fetch',url})});
+      const data = await resp.json();
+      if (data.error) throw new Error(data.error);
+      htmlText = data.text || '';
+    } else {
+      // Local: try CORS proxy
+      const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+      const resp = await fetch(proxy, {signal: AbortSignal.timeout(8000)});
+      const json = await resp.json();
+      htmlText = json.contents || '';
+    }
+
+    if (!htmlText || htmlText.length < 100) throw new Error('empty response');
+
+    // Extract hex colors from CSS in the HTML
+    const hexMatches = htmlText.match(/#[0-9a-f]{6}\b/gi) || [];
+    const filtered = [...new Set(hexMatches.map(h=>h.toLowerCase()))]
+      .filter(h => h !== '#ffffff' && h !== '#000000' && h !== '#f5f5f5');
+    if (filtered[0]) {
+      document.getElementById('wColorPrimary').value = filtered[0];
+      document.getElementById('wColorPrimaryHex').value = filtered[0];
+    }
+    if (filtered[1]) {
+      document.getElementById('wColorDark').value = filtered[1];
+      document.getElementById('wColorDarkHex').value = filtered[1];
+    }
+    // Try to extract company name from <title>
+    const titleMatch = htmlText.match(/<title[^>]*>([^<]{2,60})/i);
+    if (titleMatch && !document.getElementById('wCompany').value) {
+      const cleaned = titleMatch[1].replace(/\s*[-|–·]\s*.*/,'').trim();
+      if (cleaned) document.getElementById('wCompany').value = cleaned;
+    }
+    detectStatus.style.color = '#2e7d32';
+    detectStatus.textContent = `✓ Extracted ${filtered.length} colors — review and adjust below`;
+
+  } catch(e) {
+    detectStatus.style.color = '#e65100';
+    detectStatus.textContent = 'Could not auto-detect — many sites block this. Enter colors manually using your brand guide or browser inspector.';
+  }
+});
+
+// Save wizard
+document.getElementById('wSaveBtn').addEventListener('click', () => {
+  brandKit.company = document.getElementById('wCompany').value.trim();
+  brandKit.tagline = document.getElementById('wTagline').value.trim();
+  brandKit.primaryColor = document.getElementById('wColorPrimaryHex').value;
+  brandKit.darkColor = document.getElementById('wColorDarkHex').value;
+  brandKit.lightColor = document.getElementById('wColorLightHex').value;
+  brandKit.voice = document.getElementById('wVoice').value.trim();
+  saveBrandKit();
+  applyBrandKit();
+  showApp();
+});
+
+document.getElementById('wSkipBtn').addEventListener('click', showApp);
+// ── Example dropdown ──
+document.getElementById('exampleDropdown').addEventListener('click', function(e) {
+  const btn = e.target.closest('[data-example]');
+  if (!btn) return;
+  const key = btn.dataset.example;
+  document.getElementById('exampleDropdown').style.display = 'none';
+
+  // Klaviyo — load live page in iframe (requires vercel.json with X-Frame-Options: ALLOWALL on the landing page repo)
+  if (key === 'klaviyo') {
+    const liveUrl = 'https://klaviyo-ai-eng-recruiting-page.vercel.app/';
+    const preview = document.getElementById('preview');
+    preview.removeAttribute('sandbox');
+    preview.removeAttribute('srcdoc');
+    preview.src = liveUrl;
+    return;
+  }
+
+  const ex = EXAMPLES[key]; // triggers getter for amazon
+  if (!ex) { alert('Example not available yet.'); return; }
+
+  // If Amazon fonts not loaded yet, wait briefly
+  if (key === 'amazon' && (!window.AMAZON_FONTS || !window.AMAZON_FONTS.length)) {
+    alert('Fonts still loading — wait 2 seconds and try again.');
+    return;
+  }
+
+  // Hide any live example banner
+  const banner = document.getElementById('exampleBanner');
+  if (banner) banner.style.display = 'none';
+  const preview = document.getElementById('preview');
+  preview.setAttribute('sandbox', 'allow-same-origin allow-scripts');
+  preview.removeAttribute('src');
+
+  // Apply brand kit
+  Object.assign(brandKit, ex.brandKit);
+  saveBrandKit();
+  applyBrandKit();
+  // Apply form fields
+  const v = ex.form;
+  Object.entries(v).forEach(([id, val]) => {
+    const el = document.getElementById(id);
+    if (el) { el.value = val; el.classList.add('reviewed'); }
+  });
+  // Load persona preset
+  document.getElementById('personaText').value = brandKit.voice;
+  document.getElementById('personaText').style.color = '#b0aeac';
+  updatePreview();
+});
+// Close dropdown on outside click
+document.addEventListener('click', function(e) {
+  const dd = document.getElementById('exampleDropdown');
+  if (dd && !dd.contains(e.target) && !document.getElementById('exampleBtn').contains(e.target)) {
+    dd.style.display = 'none';
+  }
+});
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  if (!confirm('Clear all stored data and start fresh? This will reset your brand kit and form.')) return;
+  try { localStorage.removeItem(BRAND_KEY); localStorage.removeItem(SESSION_KEY); localStorage.removeItem('groq_key'); } catch(_) {}
+  window.location.reload();
+});
+
+document.getElementById('editBrandBtn').addEventListener('click', () => {
+  document.getElementById('brandWizard').classList.remove('hidden');
+  document.getElementById('appShell').classList.add('hidden');
+  // Pre-fill wizard from current kit
+  document.getElementById('wCompany').value = brandKit.company || '';
+  document.getElementById('wTagline').value = brandKit.tagline || '';
+  document.getElementById('wColorPrimary').value = brandKit.primaryColor || '#FF4B32';
+  document.getElementById('wColorPrimaryHex').value = brandKit.primaryColor || '#FF4B32';
+  document.getElementById('wColorDark').value = brandKit.darkColor || '#1D1E20';
+  document.getElementById('wColorDarkHex').value = brandKit.darkColor || '#1D1E20';
+  document.getElementById('wColorLight').value = brandKit.lightColor || '#F3F2F1';
+  document.getElementById('wColorLightHex').value = brandKit.lightColor || '#F3F2F1';
+  document.getElementById('wVoice').value = brandKit.voice || '';
+});
+
+function showApp() {
+  document.getElementById('brandWizard').classList.add('hidden');
+  document.getElementById('appShell').classList.remove('hidden');
+  applyBrandKit();
+  updatePreview();
+}
+
+// Init — wrapped in try/catch so a corrupted localStorage can't break the page
+try {
+  if (loadBrandKit() && brandKit.company) {
+    showApp();
+  } else {
+    document.getElementById('brandWizard').classList.remove('hidden');
+  }
+} catch(e) {
+  console.warn('Init error (clearing stored data):', e);
+  try { localStorage.removeItem(BRAND_KEY); localStorage.removeItem(SESSION_KEY); } catch(_) {}
+  document.getElementById('brandWizard').classList.remove('hidden');
+}
+
+// ── Preview width toggle ──
+function setPreviewWidth(w) {
+  const iframe = document.getElementById('preview');
+  iframe.style.width = w; iframe.style.maxWidth = w;
+  document.getElementById('viewDesktop').className = 'preview-btn ' + (w==='100%' ? 'active' : 'inactive');
+  document.getElementById('viewMobile').className = 'preview-btn ' + (w!=='100%' ? 'active' : 'inactive');
+}
+
+// ── Utility functions ──
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function heroTitle(headline, accent) {
+  if (!headline) return '';
+  const lines = headline.split('\n');
+  if (!accent || !headline.includes(accent)) return lines.map(l=>esc(l)).join('<br>');
+  return lines.map(l => {
+    if (!l.includes(accent)) return esc(l);
+    const idx = l.indexOf(accent);
+    return esc(l.slice(0,idx)) + `<em style="font-style:italic;color:var(--bp)">${esc(accent)}</em>` + esc(l.slice(idx+accent.length));
+  }).join('<br>');
+}
+
+function bullets(text) {
+  return (text||'').split('\n').filter(l=>l.trim()).map(l=>`<li>${esc(l.trim())}</li>`).join('');
+}
+
+function tags(allText, hlText) {
+  const hlSet = new Set((hlText||'').split(',').map(t=>t.trim().toLowerCase()).filter(Boolean));
+  return (allText||'').split(',').map(t => {
+    const label = t.trim(); if (!label) return '';
+    return `<span class="tag${hlSet.has(label.toLowerCase())?' hl':''}">${esc(label)}</span>`;
+  }).join('');
+}
+
+function buildTicker(d) {
+  const phrases = [d.ticker1,d.ticker2,d.ticker3,d.ticker4].map(p=>(p||'').trim()).filter(Boolean);
+  if (!phrases.length) return '';
+  const items = [];
+  while (items.length < 8) phrases.forEach(p => { if (items.length < 16) items.push(p); });
+  const full = [...items,...items];
+  return full.map(p => `<span class="ticker-item"><span class="ticker-mark"></span><span class="ticker-text">${esc(p)}</span></span>`).join('');
+}
+
+// ── Generate page ──
+function collectData() {
+  const v = id => { const el = document.getElementById(id); return el ? el.value : ''; };
+  return {
+    company: brandKit.company || 'Company',
+    tagline: brandKit.tagline || '',
+    primaryColor: brandKit.primaryColor || '#FF4B32',
+    darkColor: brandKit.darkColor || '#1D1E20',
+    lightColor: brandKit.lightColor || '#F3F2F1',
+    logoDataUrl: brandKit.logoDataUrl || '',
+    fontDataUrl: brandKit.fontDataUrl || '',
+    fontName: brandKit.fontName || '',
+    jobTitle:v('jobTitle'),team:v('team'),location:v('location'),
+    salaryMin:v('salaryMin'),salaryMax:v('salaryMax'),
+    ticker1:v('ticker1'),ticker2:v('ticker2'),ticker3:v('ticker3'),ticker4:v('ticker4'),
+    heroHeadline:v('heroHeadline'),heroPoppy:v('heroPoppy'),heroSub:v('heroSub'),
+    pill1:v('pill1'),pill2:v('pill2'),pill3:v('pill3'),pill4:v('pill4'),
+    whyTitle:v('whyTitle'),whyTitlePoppy:v('whyTitlePoppy'),
+    why1Title:v('why1Title'),why1Desc:v('why1Desc'),why1Link1:v('why1Link1'),why1Link2:v('why1Link2'),
+    why2Title:v('why2Title'),why2Desc:v('why2Desc'),why2Link1:v('why2Link1'),why2Link2:v('why2Link2'),
+    why3Title:v('why3Title'),why3Desc:v('why3Desc'),why3Link1:v('why3Link1'),why3Link2:v('why3Link2'),
+    why4Title:v('why4Title'),why4Desc:v('why4Desc'),why4Link1:v('why4Link1'),why4Link2:v('why4Link2'),
+    building:v('building'),time:v('time'),
+    techTags:v('techTags'),techHighlight:v('techHighlight'),softSkills:v('softSkills'),
+    required:v('required'),niceToHave:v('niceToHave'),
+    cultureTitle:v('cultureTitle'), cultureSubtitle:v('cultureSubtitle'),
+    cult1Title:v('cult1Title'),cult1Quote:v('cult1Quote'),cult1Highlight:v('cult1Highlight'),
+    cult2Title:v('cult2Title'),cult2Quote:v('cult2Quote'),cult2Highlight:v('cult2Highlight'),
+    cult3Title:v('cult3Title'),cult3Quote:v('cult3Quote'),cult3Highlight:v('cult3Highlight'),
+    cult4Title:v('cult4Title'),cult4Quote:v('cult4Quote'),cult4Highlight:v('cult4Highlight'),
+    quotes: quoteData,
+    ctaTitle:v('ctaTitle'),ctaSub:v('ctaSub'),
+    ga4Id:v('ga4Id'),pageUrl:v('pageUrl'),
+    sections: {...sectionVisible}
+  };
+}
+
+function show(key,d) { return !d.sections || d.sections[key] !== false; }
+
+function highlight(text, phrase) {
+  if (!phrase) return esc(text);
+  if (!text.includes(phrase)) return esc(text);
+  const idx = text.indexOf(phrase);
+  return esc(text.slice(0,idx)) + `<em style="font-style:normal;font-weight:600;color:var(--bp)">${esc(phrase)}</em>` + esc(text.slice(idx+phrase.length));
+}
+
+function whyCard(title,desc,l1,l2) {
+  return `<div class="why-card">
+    <div class="why-title">${esc(title)}</div>
+    <p class="why-desc">${esc(desc)}</p>
+    <ul class="why-links">${l1?`<li>${esc(l1)}</li>`:''}${l2?`<li>${esc(l2)}</li>`:''}</ul>
+  </div>`;
+}
+
+function cultCard(title,quote,hlPhrase) {
+  return `<div style="background:var(--white);padding:32px;">
+    <p style="font-family:var(--fh);font-size:22px;font-weight:700;color:var(--dark);margin-bottom:14px;letter-spacing:-.01em;line-height:1.2;font-style:normal !important;">${esc(title)}</p>
+    <p style="font-family:var(--fh);font-size:15px;font-weight:400;color:rgba(29,30,32,.72);line-height:1.7;font-style:normal !important;">${highlight(quote,hlPhrase)}</p>
+  </div>`;
+}
+
+function generatePage(d) {
+  const fontFace = d.fontDataUrl
+    ? `@font-face{font-family:'BrandFont';src:url('${d.fontDataUrl}');font-display:swap}`
+    : '';
+  const fh = d.fontDataUrl ? "'BrandFont',system-ui,-apple-system,sans-serif" : "system-ui,-apple-system,sans-serif";
+  const logoHtml = d.logoDataUrl
+    ? `<img src="${d.logoDataUrl}" alt="${esc(d.company)}" style="height:28px;width:auto;">`
+    : `<span style="font-size:20px;font-weight:700;color:white;letter-spacing:-.01em;">${esc(d.company)}</span>`;
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${esc(d.jobTitle)} — ${esc(d.company)} Careers</title>
+<meta name="description" content="${esc((d.heroSub||'').slice(0,160))}">
+<meta property="og:title" content="${esc(d.jobTitle)} — ${esc(d.company)} Careers">
+<meta property="og:description" content="${esc((d.heroSub||'').slice(0,200))}">
+<meta name="twitter:card" content="summary_large_image">
+${d.ga4Id ? `<script async src="https://www.googletagmanager.com/gtag/js?id=${esc(d.ga4Id)}"><\/script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','${esc(d.ga4Id)}');<\/script>` : ''}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+${fontFace}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bp:${d.primaryColor};--dark:${d.darkColor};--light:${d.lightColor};--white:#fff;--fh:${fh};--fb:'Instrument Sans',sans-serif;--fm:'DM Mono',monospace}
+html{scroll-behavior:smooth}
+body{font-family:var(--fh);background:var(--white);color:var(--dark);-webkit-font-smoothing:antialiased;font-style:normal}
+a{text-decoration:none;color:inherit}
+.container{max-width:1120px;margin:0 auto;padding:0 48px}
+nav{background:var(--dark);padding:0 48px;height:68px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.nav-cta{background:var(--bp);color:#fff;font-family:var(--fh);font-size:14px;font-weight:500;padding:8px 18px;border-radius:2px;display:inline-block;transition:opacity .15s;font-style:normal}
+.nav-cta:hover{opacity:.88}
+.hero{background:var(--dark);padding:54px 0 50px}
+.hero-content{max-width:780px;position:relative;padding-right:0}
+.hero-eyebrow{font-family:'Instrument Sans',sans-serif;font-size:12px;font-weight:600;letter-spacing:.08em;color:var(--bp);text-transform:uppercase;margin-bottom:24px;font-style:normal;animation:fadeUp .6s ease both;animation-delay:.1s}
+.hero-title{font-family:var(--fh);font-weight:400;font-size:clamp(40px,5.5vw,72px);line-height:1.05;letter-spacing:-.025em;color:#fff;margin-bottom:28px;animation:dropIn .8s cubic-bezier(.22,1,.36,1) both;animation-delay:.25s}
+.hero-title em{font-style:italic;color:var(--bp)}
+.hero-sub{font-size:17px;color:rgba(255,255,255,.68);max-width:100%;line-height:1.65;margin-bottom:40px;animation:fadeUp .7s ease both;animation-delay:.6s}
+.hero-pills{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:40px;animation:fadeUp .7s ease both;animation-delay:.85s}
+.hero-pill{background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.85);border:1px solid rgba(255,255,255,0.2);border-radius:100px;padding:8px 20px;font-size:13px;font-weight:500}
+.hero-actions{display:flex;gap:16px;align-items:center;flex-wrap:wrap;animation:fadeUp .7s ease both;animation-delay:1s}
+.btn-primary{background:var(--bp);color:#fff;font-family:var(--fh);font-size:15px;font-weight:500;padding:9px 20px;border-radius:2px;display:inline-block;transition:transform .18s,opacity .15s;font-style:normal}
+.btn-primary:hover{transform:translateY(-2px);opacity:.9}
+.btn-ghost{font-family:var(--fh);font-size:15px;font-weight:500;color:rgba(255,255,255,.65);display:inline-block;transition:color .15s;font-style:normal}
+.btn-ghost:hover{color:#fff;text-decoration:underline;text-underline-offset:3px}
+.ticker-wrap{background:var(--bp);overflow:hidden}
+.ticker-track{display:flex;white-space:nowrap;animation:ticker 32s linear infinite;height:40px;align-items:center}
+.ticker-item{display:inline-flex;align-items:center;flex-shrink:0}
+.ticker-text{font-family:var(--fb);font-size:12px;font-weight:600;color:#fff;letter-spacing:.08em;text-transform:uppercase;padding:0 20px;white-space:nowrap}
+.ticker-mark{width:8px;height:8px;background:rgba(255,255,255,.5);clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%);flex-shrink:0;margin:0 4px}
+@keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes dropIn{0%{opacity:0;transform:translateY(-28px)}60%{opacity:1;transform:translateY(3px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+section{padding:52px 0}
+.section-eyebrow{font-family:'Instrument Sans',sans-serif;font-size:11px;font-weight:600;letter-spacing:.08em;color:var(--bp);text-transform:uppercase;margin-bottom:16px;font-style:normal}
+.section-title{font-family:var(--fh);font-weight:600;font-size:clamp(28px,3.5vw,44px);line-height:1.1;letter-spacing:-.02em;color:var(--dark);margin-bottom:20px;font-style:normal}
+.why{background:var(--light)}
+.why-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:2px;margin-top:32px}
+.why-card{background:var(--white);padding:28px 24px;display:flex;flex-direction:column}
+.why-title{font-family:var(--fh);font-size:18px;font-weight:500;color:var(--dark);margin-bottom:10px}
+.why-desc{font-size:14px;line-height:1.7;color:rgba(29,30,32,.65);margin-bottom:16px;flex:1}
+.why-links{list-style:none;border-top:1px solid var(--light);padding-top:14px;display:flex;flex-wrap:wrap;gap:6px 0}
+.why-links li{width:50%;font-size:12px;font-weight:500;padding-left:14px;position:relative}
+.why-links li::before{content:'→';position:absolute;left:0;color:var(--bp);font-size:11px}
+.role{background:var(--dark)}
+.role .section-title{color:#fff}
+.role-layout{display:grid;grid-template-columns:1fr 280px;gap:60px;align-items:start}
+.role-section{margin-bottom:28px}
+.role-section-label{font-family:'Instrument Sans',sans-serif;font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--bp);text-transform:uppercase;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.1);font-style:normal}
+.role-list{list-style:none}
+.role-list li{padding:10px 0 10px 20px;font-size:15px;line-height:1.6;color:rgba(255,255,255,.8);border-bottom:1px solid rgba(255,255,255,.05);position:relative}
+.role-list li::before{content:'';position:absolute;left:0;top:20px;width:6px;height:6px;background:var(--bp);border-radius:50%}
+.sidebar-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:16px;margin-bottom:10px}
+.sl{font-family:var(--fm);font-size:10px;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;margin-top:16px}
+.sl:first-child{margin-top:0}
+.sv{font-size:15px;font-weight:500;color:#fff}
+.salary{font-family:var(--fh);font-size:22px;font-weight:400;color:#fff;line-height:1.2;letter-spacing:-.01em}
+.salary-note{font-size:11px;color:rgba(255,255,255,.35);margin-top:6px;line-height:1.5}
+.sidebar-apply{background:var(--bp);color:#fff;font-family:var(--fh);font-size:14px;font-weight:500;padding:12px;border-radius:2px;display:block;text-align:center;transition:opacity .15s;font-style:normal}
+.sidebar-apply:hover{opacity:.88}
+.stack{background:var(--light)}
+.stack-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:32px}
+.tag{background:var(--white);border:1px solid rgba(29,30,32,.1);border-radius:6px;padding:9px 16px;font-family:var(--fb);font-size:13px;font-weight:500;color:var(--dark);transition:all .15s;cursor:default;font-style:normal}
+.tag:hover{background:var(--dark);color:#fff}
+.tag.hl{background:var(--dark);color:#fff}
+.quals{background:var(--white)}
+.quals-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--light);margin-top:40px}
+.quals-card{background:var(--white);padding:28px}
+.qcard-head{font-family:var(--fb);font-size:17px;font-weight:600;color:var(--dark);margin-bottom:20px;display:flex;align-items:center;gap:10px;font-style:normal}
+.badge{font-family:var(--fb);font-size:10px;font-weight:600;padding:3px 10px;border-radius:100px;text-transform:uppercase;font-style:normal;letter-spacing:.04em}
+.badge-req{background:var(--dark);color:#fff}
+.badge-opt{border:1px solid rgba(29,30,32,.18);color:rgba(29,30,32,.45)}
+.qlist{list-style:none}
+.qlist li{padding:10px 0 10px 20px;font-size:14px;line-height:1.6;color:rgba(29,30,32,.78);border-bottom:1px solid var(--light);position:relative}
+.qlist li::before{content:'';position:absolute;left:0;top:19px;width:6px;height:6px;background:var(--bp);border-radius:50%}
+.quals-footnote{font-family:var(--fb);margin-top:24px;padding-top:20px;border-top:1px solid var(--light);font-size:13px;color:rgba(29,30,32,.5);line-height:1.7;font-style:normal}
+.quals-footnote strong{color:var(--dark);display:block;font-size:14px;margin-bottom:4px}
+.cult{background:var(--light)}
+.cta-wrap{background:var(--bp);padding:60px 48px;text-align:center;position:relative;overflow:hidden}
+.cta-content{position:relative;z-index:1}
+.cta-title{font-family:var(--fh);font-weight:600;font-size:clamp(28px,4vw,48px);line-height:1.1;letter-spacing:-.02em;color:#fff;max-width:560px;margin:0 auto 16px;font-style:normal}
+.cta-sub{font-size:17px;color:rgba(255,255,255,.75);max-width:640px;margin:0 auto 40px;line-height:1.65}
+.btn-white{background:#fff;color:var(--dark);font-size:15px;font-weight:500;padding:10px 24px;border-radius:2px;display:inline-block;transition:opacity .15s}
+.btn-white:hover{opacity:.9}
+.share-strip{background:var(--light);padding:40px 48px;text-align:center}
+.share-strip-title{font-family:var(--fh);font-size:22px;font-weight:600;color:var(--dark);margin-bottom:8px;letter-spacing:-.01em;font-style:normal}
+.share-strip-sub{font-size:15px;color:rgba(29,30,32,.55);margin-bottom:24px}
+.share-strip-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.share-strip-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 22px;border-radius:2px;font-family:var(--fh);font-size:14px;font-weight:500;cursor:pointer;text-decoration:none;transition:opacity .15s;border:none;font-style:normal}
+.share-strip-btn:hover{opacity:.85}
+footer{background:var(--dark);padding:22px 48px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
+.footer-links{display:flex;gap:24px}
+.footer-links a{font-family:var(--fh);font-size:13px;color:rgba(255,255,255,.38);font-weight:500;transition:color .15s;font-style:normal}
+.footer-links a:hover{color:#fff;text-decoration:underline}
+.footer-copy{font-size:12px;color:rgba(255,255,255,.22)}
+@media(max-width:640px){
+  .why-grid,.quals-grid,.role-layout{grid-template-columns:1fr!important}
+  .container{padding:0 20px}
+  .cult-grid{grid-template-columns:1fr!important}
+  .hero-content{padding-right:0!important}
+  .cta-wrap,.share-strip,footer{padding-left:24px;padding-right:24px}
+}
+</style>
+</head>
+<body>
+<nav>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <a href="#" aria-label="${esc(d.company)}">${logoHtml}</a>
+    ${d.tagline ? `<span style="font-family:var(--fh);font-size:12px;font-weight:400;color:rgba(255,255,255,0.4);font-style:normal;border-left:1px solid rgba(255,255,255,0.15);padding-left:12px;letter-spacing:.01em;">${esc(d.tagline)}</span>` : ''}
+  </div>
+  <a href="#apply" class="nav-cta">Apply now</a>
+</nav>
+
+<section class="hero">
+  <div class="container">
+    <div class="hero-content">
+      <p class="hero-eyebrow">${esc(d.jobTitle)}${d.team?' · '+esc(d.team):''}${d.location?' · '+esc(d.location):''}</p>
+      <h1 class="hero-title">${heroTitle(d.heroHeadline, d.heroPoppy)}</h1>
+      <p class="hero-sub">${esc(d.heroSub)}</p>
+      <div class="hero-pills">
+        ${[d.pill1,d.pill2,d.pill3,d.pill4].filter(p=>p&&p.trim()).map(p=>`<span class="hero-pill">${esc(p)}</span>`).join('')}
+      </div>
+      <div class="hero-actions">
+        <a href="#apply" class="btn-primary">Apply now</a>
+        <a href="#role" class="btn-ghost">See the full role ↓</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+${show('ticker',d) && buildTicker(d) ? `<div class="ticker-wrap" aria-hidden="true"><div class="ticker-track">${buildTicker(d)}</div></div>` : ''}
+
+${show('why',d) ? `<section class="why">
+  <div class="container">
+    <p class="section-eyebrow">Why ${esc(d.company)}</p>
+    <h2 class="section-title">${heroTitle(d.whyTitle, d.whyTitlePoppy)}</h2>
+    <div class="why-grid">
+      ${whyCard(d.why1Title,d.why1Desc,d.why1Link1,d.why1Link2)}
+      ${whyCard(d.why2Title,d.why2Desc,d.why2Link1,d.why2Link2)}
+      ${d.why3Title&&d.why3Title.trim()?whyCard(d.why3Title,d.why3Desc,d.why3Link1,d.why3Link2):''}
+      ${d.why4Title&&d.why4Title.trim()?whyCard(d.why4Title,d.why4Desc,d.why4Link1,d.why4Link2):''}
+    </div>
+  </div>
+</section>` : ''}
+
+${show('role',d) ? `<section class="role" id="role">
+  <div class="container">
+    <p class="section-eyebrow">The role</p>
+    <h2 class="section-title">${esc(d.jobTitle)}</h2>
+    <div class="role-layout">
+      <div>
+        ${d.building?`<div class="role-section"><p class="role-section-label">What you're actually building</p><ul class="role-list">${bullets(d.building)}</ul></div>`:''}
+        ${d.time?`<div class="role-section"><p class="role-section-label">How you'll spend your time</p><ul class="role-list">${bullets(d.time)}</ul></div>`:''}
+      </div>
+      <div style="position:sticky;top:80px">
+        <div class="sidebar-card">
+          <div class="sl">Base pay range</div>
+          <div class="salary">${esc(d.salaryMin)}${d.salaryMax?' –<br>'+esc(d.salaryMax):''}</div>
+        </div>
+        <div class="sidebar-card">
+          ${d.team?`<div class="sl">Team</div><div class="sv">${esc(d.team)}</div>`:''}
+          ${d.location?`<div class="sl">Location</div><div class="sv">${esc(d.location)}</div>`:''}
+        </div>
+        <a href="#apply" class="sidebar-apply">Apply for this role →</a>
+      </div>
+    </div>
+  </div>
+</section>` : ''}
+
+${show('stack',d) && (d.techTags||d.softSkills) ? `<section class="stack">
+  <div class="container">
+    <p class="section-eyebrow">Skills</p>
+    <h2 class="section-title">What you'll bring</h2>
+    ${d.techTags&&d.techTags.trim()?`<p style="font-family:var(--fm);font-size:11px;color:var(--bp);letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px;margin-top:32px;">Technical</p><div class="stack-tags">${tags(d.techTags,d.techHighlight)}</div>`:''}
+    ${d.softSkills&&d.softSkills.trim()?`<p style="font-family:var(--fm);font-size:11px;color:var(--bp);letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px;margin-top:28px;">Soft skills</p><div class="stack-tags">${tags(d.softSkills,'')}</div>`:''}
+  </div>
+</section>` : ''}
+
+${show('quals',d) ? `<section class="quals">
+  <div class="container">
+    <p class="section-eyebrow">Who you are</p>
+    <h2 class="section-title">The teammate we're looking for</h2>
+    <div class="quals-grid">
+      <div class="quals-card">
+        <div class="qcard-head">The core profile <span class="badge badge-req">Required</span></div>
+        <ul class="qlist">${bullets(d.required)}</ul>
+      </div>
+      <div class="quals-card">
+        <div class="qcard-head">Adds a lot <span class="badge badge-opt">Bonus</span></div>
+        <ul class="qlist">${bullets(d.niceToHave)}</ul>
+        <div class="quals-footnote"><strong>Not a perfect match? Apply anyway.</strong>We care more about trajectory and how you think than whether you hit every line item.</div>
+      </div>
+    </div>
+  </div>
+</section>` : ''}
+
+${show('culture',d) && (d.cult1Title||d.cult2Title) ? `<section class="cult">
+  <div class="container">
+    <p class="section-eyebrow">Culture</p>
+    <h2 class="section-title">${esc(d.cultureTitle || 'Life at ' + d.company)}</h2>
+    ${(d.cultureSubtitle||'The values we work by — and what it actually means to work here.').trim() ? `<p style="font-family:var(--fh);font-size:17px;color:rgba(29,30,32,.6);max-width:520px;line-height:1.7;margin-bottom:40px;font-style:normal !important;">${esc(d.cultureSubtitle || 'The values we work by — and what it actually means to work here.')}</p>` : ''}
+  </div>
+  <div class="cult-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:2px;max-width:1120px;margin:0 auto;padding:0 48px">
+    ${d.cult1Title?cultCard(d.cult1Title,d.cult1Quote,d.cult1Highlight):''}
+    ${d.cult2Title?cultCard(d.cult2Title,d.cult2Quote,d.cult2Highlight):''}
+    ${d.cult3Title&&d.cult3Title.trim()?cultCard(d.cult3Title,d.cult3Quote,d.cult3Highlight):''}
+    ${d.cult4Title&&d.cult4Title.trim()?cultCard(d.cult4Title,d.cult4Quote,d.cult4Highlight):''}
+  </div>
+</section>` : ''}
+
+${show('quotes',d) && d.quotes && d.quotes.length ? `<section style="background:var(--dark);padding:52px 0;">
+  <div class="container">
+    <p class="section-eyebrow">Life at ${esc(d.company)}</p>
+    <h2 class="section-title" style="color:#fff">Hear from our team.</h2>
+  </div>
+  <div style="padding:0 48px;max-width:1120px;margin:0 auto;margin-top:32px;">
+    ${d.quotes.map(q=>`<div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:36px;display:flex;flex-direction:column;max-width:800px;margin:0 auto;">
+      <p style="font-family:var(--fh);font-size:20px;font-weight:400;color:#fff;line-height:1.5;letter-spacing:-.01em;margin-bottom:24px;">&ldquo;${esc(q.quote)}&rdquo;</p>
+      <div style="display:flex;align-items:center;gap:14px;margin-top:auto;">
+        ${q.image?`<img src="${q.image}" alt="${esc(q.name)}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0;">`:''}
+        <div><div style="font-family:var(--fm);font-size:12px;font-weight:500;color:#fff;letter-spacing:.08em;text-transform:uppercase;">${esc(q.name)}</div>
+        <div style="font-family:var(--fm);font-size:11px;color:rgba(255,255,255,.4);letter-spacing:.06em;text-transform:uppercase;margin-top:4px;">${esc(q.title)}</div></div>
+      </div>
+    </div>`).join('')}
+  </div>
+</section>` : ''}
+
+<div class="cta-wrap" id="apply">
+  <div class="cta-content">
+    <h2 class="cta-title">${esc(d.ctaTitle)}</h2>
+    <p class="cta-sub">${esc(d.ctaSub)}</p>
+    <a href="${d.pageUrl||'#'}" class="btn-white">Apply now</a>
+  </div>
+</div>
+
+<div class="share-strip">
+  <p class="share-strip-title">Know someone who'd be great?</p>
+  <p class="share-strip-sub">Share this role — your friends deserve a job they actually rave about.</p>
+  <div class="share-strip-btns">
+    <a href="https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(d.pageUrl||'')}" target="_blank" rel="noopener" class="share-strip-btn" style="background:#0a66c2;color:#fff;">Share on LinkedIn</a>
+    <a href="https://twitter.com/intent/tweet?url=${encodeURIComponent(d.pageUrl||'')}&text=${encodeURIComponent('Now hiring: '+d.jobTitle+' at '+d.company)}" target="_blank" rel="noopener" class="share-strip-btn" style="background:var(--dark);color:#fff;">Share on X</a>
+    <button onclick="navigator.clipboard.writeText('${esc(d.pageUrl||'')}');this.textContent='✓ Copied!';setTimeout(()=>this.textContent='⎘ Copy link',2000)" class="share-strip-btn" style="background:var(--light);color:var(--dark);border:1px solid rgba(29,30,32,.12);">⎘ Copy link</button>
+  </div>
+</div>
+
+<footer>
+  <span style="font-size:15px;font-weight:600;color:#fff;">${esc(d.company)}</span>
+  <div class="footer-links">
+    <a href="#">Careers</a>
+    <a href="#">About</a>
+  </div>
+  <p class="footer-copy">© ${new Date().getFullYear()} ${esc(d.company)}. All rights reserved.</p>
+</footer>
+
+${d.ga4Id ? `<script>document.querySelectorAll('a[href*="apply"], .sidebar-apply, .nav-cta').forEach(function(b){b.addEventListener('click',function(){if(typeof gtag!=='undefined')gtag('event','apply_click',{event_category:'recruiting',event_label:'${esc(d.jobTitle)}'});})});<\/script>` : ''}
+</body>
+</html>`;
+}
+
+function updatePreview() {
+  document.getElementById('preview').srcdoc = generatePage(collectData());
+}
+
+// ── Input listeners ──
+document.querySelectorAll('input, textarea').forEach(el => el.addEventListener('input', updatePreview));
+document.addEventListener('input', function(e) {
+  const el = e.target;
+  if ((el.tagName==='INPUT'||el.tagName==='TEXTAREA') && el.closest('.form-panel')) {
+    el.classList.remove('autofilled');
+    el.classList.add('reviewed');
+    saveSession();
+  }
+}, true);
+
+// ── Copy HTML ──
+document.getElementById('copyBtn').addEventListener('click', function() {
+  const html = generatePage(collectData());
+  navigator.clipboard.writeText(html).then(() => {
+    this.textContent = 'Copied!';
+    this.classList.add('copied');
+    setTimeout(() => { this.textContent = 'Copy HTML'; this.classList.remove('copied'); }, 2000);
+  });
+});
+
+// ── Persona presets ──
+const PERSONA_PRESETS = {
+  engineering: `Engineers care about: technical scale, working on AI/systems that matter, peer quality, ownership without bureaucracy, learning velocity. Skeptical of corporate speak. Key motivators: real scale, architectural influence, hard problems. Tone: direct, honest, technically specific.`,
+  marketing: `Marketers care about: brand impact at scale, creative autonomy, data-backed decisions, fast feedback loops, cross-functional influence. Key motivators: campaigns they're proud of, measurable impact, owning initiatives end-to-end. Tone: ambitious but grounded.`,
+  sales: `Sales candidates care about: strong product-market fit, territory ownership, competitive comp, clear career path, meaningful customer relationships. Red flags: unclear comp, micromanagement, no promotion path. Tone: direct, comp-transparent, growth-forward.`,
+  product: `Product managers care about: shipping things that matter, data access for real decisions, proximity to customers, cross-functional influence. Key motivators: roadmap ownership, customer impact, working with strong engineers. Tone: customer-first, outcome-driven.`,
+  people: `People & talent professionals care about: strategic partnership, high talent density, culture that lives up to values, doing work they're proud of. Key motivators: trust from leadership, meaningful culture impact. Tone: people-first, strategic, authentic.`
+};
+
+document.getElementById('personaPresets').addEventListener('click', function(e) {
+  const btn = e.target.closest('[data-preset]');
+  if (!btn) return;
+  const preset = PERSONA_PRESETS[btn.dataset.preset];
+  if (preset) {
+    const el = document.getElementById('personaText');
+    el.value = preset;
+    // Show as grey suggestion — user must edit to confirm (clicking turns it black)
+    el.classList.remove('reviewed','autofilled');
+    el.style.color = '#b0aeac';
+    document.querySelectorAll('[data-preset]').forEach(b => {
+      b.style.background = b.dataset.preset===btn.dataset.preset ? 'var(--brand-dark)' : 'white';
+      b.style.color = b.dataset.preset===btn.dataset.preset ? 'white' : '#555';
+    });
+  }
+});
+
+// ── Auto-generate persona from JD ──
+document.getElementById('personaAutoBtn').addEventListener('click', async () => {
+  const jdText = document.getElementById('jdText').value.trim();
+  const autoStatus = document.getElementById('personaAutoStatus');
+  if (!jdText) {
+    autoStatus.style.color = 'var(--brand-primary)';
+    autoStatus.textContent = 'Paste the JD text first, then click Auto-generate.';
+    return;
+  }
+
+  if (autoStatus) { autoStatus.style.color = '#888'; autoStatus.textContent = '⏳ Figuring out who this candidate is…'; }
+  document.getElementById('personaAutoBtn').disabled = true;
+
+  const company = brandKit.company || 'this company';
+  const personaPrompt = `You are a senior employer branding strategist. Based on the job description below, write a candidate persona context paragraph (4-6 sentences) for a recruiting landing page.
+
+The paragraph should describe:
+1. What type of person this role attracts (be specific — e.g. "hourly warehouse workers", not "candidates")
+2. What they actually care about in a job (pay, schedule, stability, growth, team, benefits — whatever is relevant for THIS role type)
+3. What motivates them to apply vs. scroll past
+4. What would be a red flag or turn-off in how the role is presented
+5. The right tone and language to use (formal? casual? direct? warm?)
+
+Be specific to this exact role type. Do NOT default to white-collar/tech framing if this is an hourly, trade, healthcare, or non-office role. Write the paragraph as context for an AI copywriter, not for a candidate to read.
+
+Job description:
+${jdText.slice(0, 5000)}
+
+Return ONLY the paragraph text, no labels or formatting.`;
+
+  try {
+    let personaText = '';
+    if (isLocal) {
+      const localKey = (document.getElementById('openaiKey')?.value||'').trim();
+      if (!localKey) throw new Error('Add your Groq key to the dev field above first.');
+      const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':`Bearer ${localKey}`},
+        body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:[{role:'user',content:personaPrompt}],temperature:0.4,max_tokens:400})
+      });
+      const data = await resp.json();
+      personaText = data.choices?.[0]?.message?.content?.trim() || '';
+    } else {
+      const resp = await fetch('/api/parse', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({text: personaPrompt, action:'culture'}) // reuse culture action (single text → single text response)
+      });
+      const data = await resp.json();
+      // culture action returns JSON — if it's a string field, extract it
+      personaText = typeof data === 'string' ? data : (data.persona || data.text || Object.values(data)[0] || '');
+    }
+
+    if (!personaText) throw new Error('No response from AI');
+    // Populate the persona textarea so user can see and edit before parsing
+    const personaEl = document.getElementById('personaText');
+    personaEl.value = personaText;
+    personaEl.classList.add('autofilled');
+    personaEl.style.color = '#1D1E20';
+    personaEl.scrollIntoView({behavior:'smooth', block:'center'});
+    // Deselect all presets
+    document.querySelectorAll('[data-preset]').forEach(b => { b.style.background='white'; b.style.color='#555'; });
+    if (autoStatus) { autoStatus.style.color = '#2e7d32'; autoStatus.textContent = '✓ Persona generated above — review, edit, then click Parse'; }
+  } catch(e) {
+    autoStatus.style.color = 'var(--brand-primary)';
+    autoStatus.textContent = e.message;
+  } finally {
+    document.getElementById('personaAutoBtn').disabled = false;
+  }
+});
+
+// ── Persona file reader ──
+document.getElementById('personaFile') && document.getElementById('personaFile').addEventListener('change', async function() {
+  const file = this.files[0]; if (!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  try {
+    if (ext === 'docx') {
+      const ab = await file.arrayBuffer();
+      const r = await mammoth.extractRawText({arrayBuffer:ab});
+      document.getElementById('personaText').value = r.value;
+    } else {
+      const reader = new FileReader();
+      reader.onload = e => { document.getElementById('personaText').value = e.target.result; };
+      reader.readAsText(file);
+    }
+    document.getElementById('personaStatus').textContent = '✓ Loaded: ' + file.name;
+  } catch(e) { document.getElementById('personaStatus').textContent = 'Could not read — paste manually'; }
+});
+
+// ── JD Fetch ──
+const status = document.getElementById('parseStatus');
+const isLocal = window.location.protocol === 'file:' || window.location.hostname === 'localhost';
+if (isLocal) {
+  const devEl = document.getElementById('devKeyField');
+  if (devEl) devEl.style.display = 'block';
+  const saved = localStorage.getItem('groq_key');
+  const keyEl = document.getElementById('openaiKey');
+  if (saved && keyEl) keyEl.value = saved;
+  if (keyEl) keyEl.addEventListener('input', () => localStorage.setItem('groq_key', keyEl.value.trim()));
+}
+
+document.getElementById('fetchBtn').addEventListener('click', async () => {
+  const url = document.getElementById('jdUrl').value.trim();
+  if (!url) return;
+  status.style.color = '#888'; status.textContent = 'Fetching…';
+  try {
+    let plain = '';
+    if (!isLocal) {
+      const resp = await fetch('/api/parse', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'fetch',url})});
+      const data = await resp.json();
+      if (data.error) throw new Error(data.error);
+      plain = data.text;
+    } else {
+      const proxies = [u=>`https://api.allorigins.win/get?url=${encodeURIComponent(u)}`];
+      for (const makeProxy of proxies) {
+        try {
+          const r = await fetch(makeProxy(url),{signal:AbortSignal.timeout(8000)});
+          const json = await r.json();
+          const html = json.contents || '';
+          const div = document.createElement('div');
+          div.innerHTML = html;
+          div.querySelectorAll('script,style,nav,footer').forEach(el=>el.remove());
+          plain = (div.innerText||div.textContent||'').trim();
+          if (plain.length > 100) break;
+        } catch(e) { continue; }
+      }
+    }
+    if (plain.length > 100) {
+      document.getElementById('jdText').value = plain;
+      status.style.color = '#2e7d32'; status.textContent = '✓ Fetched — click Parse to autofill';
+    } else throw new Error('empty');
+  } catch(e) {
+    status.style.color = 'var(--brand-primary)';
+    status.textContent = 'Could not fetch — paste JD text manually';
+  }
+});
+
+// ── AI system prompt ──
+function buildSystemPrompt() {
+  const company = brandKit.company || 'this company';
+  const voice = brandKit.voice || '';
+  return `You are a senior employer branding specialist. Your job is to transform a raw job description into compelling, candidate-first copy for ${company}.
+
+${voice ? `## Company brand voice & candidate context\n${voice}\n\n` : ''}## SOURCING RULES
+- JD only (verbatim): required, niceToHave, building, time, techTags, jobTitle, location, salary
+- JD + brand context combined: heroHeadline, heroPoppy, heroSub, pill1, pill2, whyTitle, why1-4 cards, ctaTitle, ctaSub, ticker phrases
+- cult1-4: Leave as empty strings
+
+## Field rules
+jobTitle: Extract exactly. location: City, state or "Remote". salaryMin/Max: With $ sign, leave empty if not listed.
+heroHeadline: 6-10 words, candidate-facing, action-oriented. Focus on what they BUILD or IMPACT. Make the right person lean forward.
+heroPoppy: 3-5 words from headline to highlight in accent color.
+heroSub: 2 sentences max. Start with "You'll" or strong verb. Under 220 chars. Candidate-first.
+pill1: Salary formatted as "$XK – $YK base" or role descriptor. pill2: 2-4 word role type.
+whyTitle: 8-12 word section headline for why work here. whyTitlePoppy: 3-5 words to highlight.
+why1Title-why4Title: 4 card titles (5-8 words) covering: data/scale, culture, growth, impact.
+why1Desc-why4Desc: 2-3 sentence descriptions per card. Specific and factual.
+why1Link1/Link2: Snappy 1-3 word selling points per card. Optional — leave empty if nothing fits.
+building: 4-6 bullets from JD responsibilities, rewritten with action verbs. Newline-separated, no bullets.
+time: 4-5 day-to-day bullets. Newline-separated.
+required: VERBATIM from JD. All of them. No summarizing. Newline-separated.
+niceToHave: VERBATIM from JD preferred section. Newline-separated.
+techTags: Hard skills only, comma-separated. softSkills: Personality traits, comma-separated.
+ticker1-4: 3-6 word phrases. Company stats + role highlights.
+ctaTitle: 6-10 word CTA, punchy, candidate-first. ctaSub: 1-2 sentence CTA.
+cult1-4 fields: Return empty strings — do NOT generate culture content.
+
+BANNED: "leverage","passionate","dynamic","synergy","we are looking for","join our team","you will be responsible for"
+
+Return ONLY valid JSON with ALL keys:
+{"jobTitle":"","location":"","salaryMin":"","salaryMax":"","heroHeadline":"","heroPoppy":"","heroSub":"","pill1":"","pill2":"","building":"","time":"","required":"","niceToHave":"","techTags":"","softSkills":"","whyTitle":"","whyTitlePoppy":"","why1Title":"","why1Desc":"","why1Link1":"","why1Link2":"","why2Title":"","why2Desc":"","why2Link1":"","why2Link2":"","why3Title":"","why3Desc":"","why3Link1":"","why3Link2":"","why4Title":"","why4Desc":"","why4Link1":"","why4Link2":"","cult1Title":"","cult1Quote":"","cult1Highlight":"","cult2Title":"","cult2Quote":"","cult2Highlight":"","cult3Title":"","cult3Quote":"","cult3Highlight":"","cult4Title":"","cult4Quote":"","cult4Highlight":"","ticker1":"","ticker2":"","ticker3":"","ticker4":"","ctaTitle":"","ctaSub":""}`;
+}
+
+async function parseWithAI(text, apiKey, personaContext) {
+  const personaSection = personaContext ? `\n\n## CANDIDATE PERSONA\n${personaContext}\nUse this to shape hero, why cards, and CTA.` : '';
+  const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':`Bearer ${apiKey}`},
+    body:JSON.stringify({
+      model:'llama-3.3-70b-versatile',
+      messages:[
+        {role:'system',content:buildSystemPrompt()+personaSection},
+        {role:'user',content:`Parse this job description and return ONLY valid JSON:\n\n${text.slice(0,12000)}`}
+      ],
+      temperature:0.3,
+      response_format:{type:'json_object'}
+    })
+  });
+  if (!resp.ok) { const err = await resp.json(); throw new Error(err.error?.message||'Groq error'); }
+  const data = await resp.json();
+  const raw = data.choices?.[0]?.message?.content;
+  return JSON.parse(raw.replace(/^```json\s*/,'').replace(/\s*```$/,'').trim());
+}
+
+function applyParsed(filled) {
+  const map = {
+    jobTitle:'jobTitle',location:'location',salaryMin:'salaryMin',salaryMax:'salaryMax',
+    heroHeadline:'heroHeadline',heroPoppy:'heroPoppy',heroSub:'heroSub',pill1:'pill1',pill2:'pill2',
+    building:'building',time:'time',required:'required',niceToHave:'niceToHave',
+    techTags:'techTags',techHighlight:'techHighlight',softSkills:'softSkills',
+    whyTitle:'whyTitle',whyTitlePoppy:'whyTitlePoppy',
+    why1Title:'why1Title',why1Desc:'why1Desc',why1Link1:'why1Link1',why1Link2:'why1Link2',
+    why2Title:'why2Title',why2Desc:'why2Desc',why2Link1:'why2Link1',why2Link2:'why2Link2',
+    why3Title:'why3Title',why3Desc:'why3Desc',why3Link1:'why3Link1',why3Link2:'why3Link2',
+    why4Title:'why4Title',why4Desc:'why4Desc',why4Link1:'why4Link1',why4Link2:'why4Link2',
+    ticker1:'ticker1',ticker2:'ticker2',ticker3:'ticker3',ticker4:'ticker4',
+    ctaTitle:'ctaTitle',ctaSub:'ctaSub',
+  };
+  let count = 0;
+  for (const [key,id] of Object.entries(map)) {
+    if (filled[key]) {
+      const el = document.getElementById(id);
+      if (el) { el.value = filled[key]; el.classList.remove('reviewed'); el.classList.add('autofilled'); count++; }
+    }
+  }
+  return count;
+}
+
+function showCompletenessScore() {
+  const SCORE_FIELDS = ['jobTitle','location','heroHeadline','heroSub','pill1','building','time','required','techTags','whyTitle','why1Title','why2Title','ctaTitle','ctaSub'];
+  const score = SCORE_FIELDS.filter(id=>{ const el=document.getElementById(id); return el&&el.value.trim(); }).length;
+  const total = SCORE_FIELDS.length;
+  const pct = Math.round(score/total*100);
+  const color = pct>=80?'#2e7d32':pct>=50?'#e65100':'#c62828';
+  status.innerHTML = `<span style="color:${color};font-weight:600">${pct}% complete</span> · ${score}/${total} key fields filled`;
+}
+
+document.getElementById('parseBtn').addEventListener('click', async () => {
+  const parseBtn = document.getElementById('parseBtn');
+  parseBtn.disabled = true;
+  parseBtn.textContent = '⏳ Parsing...';
+  const text = document.getElementById('jdText').value.trim();
+  if (!text) {
+    status.style.color = 'var(--brand-primary)';
+    status.textContent = '← Paste your JD text in the box above first';
+    parseBtn.disabled = false; parseBtn.textContent = '✦ Parse & autofill form';
+    return;
+  }
+  // Check for Groq key when running locally
+  if (isLocal) {
+    const localKey = (document.getElementById('openaiKey')?.value||'').trim();
+    if (!localKey) {
+      status.style.color = 'var(--brand-primary)';
+      status.textContent = '← Enter your Groq key (gsk_...) in the dev field above first';
+      document.getElementById('devKeyField').scrollIntoView({behavior:'smooth', block:'center'});
+      parseBtn.disabled = false; parseBtn.textContent = '✦ Parse & autofill form';
+      return;
+    }
+  }
+  const personaContext = document.getElementById('personaText').value.trim();
+  status.style.color = '#888'; status.textContent = '⏳ Thinking like a recruiter…';
+  try {
+    let filled;
+    if (isLocal) {
+      const localKey = (document.getElementById('openaiKey')?.value||'').trim();
+      filled = await parseWithAI(text, localKey, personaContext);
+    } else {
+      const resp = await fetch('/api/parse', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text, personaContext, systemPrompt: buildSystemPrompt()})});
+      if (!resp.ok) { const err = await resp.json(); throw new Error(err.error||'Server error'); }
+      filled = await resp.json();
+    }
+    const count = applyParsed(filled);
+    showCompletenessScore();
+    showLinkedInFinder(filled.jobTitle || document.getElementById('jobTitle').value);
+    updatePreview();
+  } catch(e) {
+    status.style.color = 'var(--brand-primary)';
+    if (isLocal && e.message && e.message.includes('Groq key')) {
+      status.textContent = 'Add your Groq key (gsk_...) to the dev field above, then try again.';
+    } else {
+      status.style.color = '#888';
+      status.textContent = `Error: ${e.message || 'unknown'} — try again`;
+      const jt = text.match(/^(.{4,60}?)(?:\n|$)/m);
+      if (jt) { const el=document.getElementById('jobTitle'); if(el&&!el.value){el.value=jt[1].trim();el.classList.add('autofilled');} }
+      showCompletenessScore();
+      updatePreview();
+    }
+  } finally {
+    parseBtn.disabled = false;
+    parseBtn.textContent = '✦ Parse & autofill form';
+  }
+});
+
+// ── Culture card generator ──
+document.getElementById('cultureFetchBtn').addEventListener('click', async () => {
+  const url = document.getElementById('cultureUrl').value.trim();
+  const cs = document.getElementById('cultureStatus');
+  if (!url) return;
+  cs.style.color = '#888'; cs.textContent = 'Fetching culture page…';
+  try {
+    let text = '';
+    if (!isLocal) {
+      const resp = await fetch('/api/parse', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'fetch',url})});
+      const data = await resp.json();
+      if (data.error) throw new Error(data.error);
+      text = data.text || '';
+    } else {
+      const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+      const resp = await fetch(proxy, {signal: AbortSignal.timeout(8000)});
+      const json = await resp.json();
+      const div = document.createElement('div');
+      div.innerHTML = json.contents || '';
+      div.querySelectorAll('script,style,nav,footer').forEach(el=>el.remove());
+      text = (div.innerText || div.textContent || '').trim();
+    }
+    if (!text || text.length < 50) throw new Error('empty');
+    document.getElementById('cultureText').value = text.slice(0, 8000);
+    cs.style.color = '#2e7d32'; cs.textContent = '✓ Fetched — click Generate to create culture cards';
+  } catch(e) {
+    cs.style.color = '#e65100'; cs.textContent = 'Could not fetch — paste the culture content manually';
+  }
+});
+
+document.getElementById('generateCultureBtn').addEventListener('click', async () => {
+  const text = document.getElementById('cultureText').value.trim();
+  const cs = document.getElementById('cultureStatus');
+  if (!text) { cs.textContent = 'Paste some culture content first'; return; }
+
+  cs.style.color = '#888'; cs.textContent = '⏳ Generating culture cards…';
+  const company = brandKit.company || 'this company';
+
+  const culturePrompt = `You are an employer branding specialist. Based on the company culture content below, generate exactly 4 culture cards for a recruiting landing page for ${company}.
+
+Each card should:
+- Have a bold, direct headline (5-8 words) that captures a real cultural value or truth — no fluff
+- Have 1-2 sentences of body text pulled directly from the source material, slightly condensed but NOT rewritten or paraphrased significantly — keep the original voice and verbiage
+- Have a highlighted phrase (4-8 words from the body text) that is the most impactful part
+- Do NOT format as a quote — write as a plain statement, not dialogue
+
+Return ONLY valid JSON:
+{"cult1Title":"","cult1Quote":"","cult1Highlight":"","cult2Title":"","cult2Quote":"","cult2Highlight":"","cult3Title":"","cult3Quote":"","cult3Highlight":"","cult4Title":"","cult4Quote":"","cult4Highlight":""}
+
+Culture content to base this on:
+${text.slice(0, 6000)}`;
+
+  try {
+    let filled;
+    if (isLocal) {
+      const localKey = (document.getElementById('openaiKey')?.value||'').trim();
+      if (!localKey) throw new Error('Paste your Groq key to use AI');
+      const resp = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':`Bearer ${localKey}`},
+        body:JSON.stringify({model:'llama-3.3-70b-versatile',messages:[{role:'user',content:culturePrompt}],temperature:0.4,response_format:{type:'json_object'}})
+      });
+      const data = await resp.json();
+      filled = JSON.parse(data.choices[0].message.content);
+    } else {
+      const resp = await fetch('/api/parse', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text: culturePrompt, action:'culture'})});
+      if (!resp.ok) throw new Error('Server error');
+      filled = await resp.json();
+    }
+
+    // Apply to culture card fields
+    const cultFields = ['cult1Title','cult1Quote','cult1Highlight','cult2Title','cult2Quote','cult2Highlight','cult3Title','cult3Quote','cult3Highlight','cult4Title','cult4Quote','cult4Highlight'];
+    let count = 0;
+    cultFields.forEach(id => {
+      if (filled[id]) {
+        const el = document.getElementById(id);
+        if (el) { el.value = filled[id]; el.classList.remove('reviewed'); el.classList.add('autofilled'); count++; }
+      }
+    });
+    cs.style.color = '#2e7d32';
+    cs.textContent = `✓ Generated ${Math.round(count/3)} culture cards — yellow = review before publishing`;
+    updatePreview();
+  } catch(e) {
+    cs.style.color = 'var(--brand-primary)';
+    cs.textContent = `Error: ${e.message}`;
+  }
+});
+
+// ── Quote management ──
+function renderQuoteForms() {
+  const list = document.getElementById('quotesFormList');
+  list.innerHTML = '';
+  quoteData.forEach((q,i) => {
+    const card = document.createElement('div');
+    card.className = 'card-group';
+    card.innerHTML = `<div class="card-group-title">Quote ${i+1} ${quoteData.length>1?`<span data-remove="${i}" style="float:right;color:var(--brand-primary);cursor:pointer;font-size:11px;">Remove</span>`:''}</div>
+      <div class="field"><label>Photo</label><input type="file" accept="image/*" data-qi="${i}" data-type="image" style="width:100%;font-size:11px;color:#888">
+      ${q.image?`<img src="${q.image}" style="margin-top:6px;width:48px;height:48px;border-radius:50%;object-fit:cover;">`:''}
+      </div>
+      <div class="field"><label>Quote text</label><textarea data-qi="${i}" data-type="quote" style="min-height:72px">${q.quote}</textarea></div>
+      <div class="field-row">
+        <div class="field"><label>Name</label><input type="text" data-qi="${i}" data-type="name" value="${q.name}"></div>
+        <div class="field"><label>Title</label><input type="text" data-qi="${i}" data-type="title" value="${q.title}"></div>
+      </div>`;
+    list.appendChild(card);
+  });
+  list.querySelectorAll('[data-remove]').forEach(btn => {
+    btn.addEventListener('click', () => { quoteData.splice(parseInt(btn.dataset.remove),1); renderQuoteForms(); updatePreview(); });
+  });
+  list.querySelectorAll('[data-qi]').forEach(el => {
+    if (el.type==='file') {
+      el.addEventListener('change', function() {
+        const i = parseInt(this.dataset.qi); const file = this.files[0]; if (!file) return;
+        const reader = new FileReader();
+        reader.onload = e => { quoteData[i].image = e.target.result; renderQuoteForms(); updatePreview(); };
+        reader.readAsDataURL(file);
+      });
+    } else {
+      el.addEventListener('input', function() { quoteData[parseInt(this.dataset.qi)][this.dataset.type] = this.value; updatePreview(); });
+    }
+  });
+}
+document.getElementById('addQuoteBtn').addEventListener('click', () => {
+  quoteData.push({image:'',quote:'',name:'',title:''}); renderQuoteForms(); updatePreview();
+});
+renderQuoteForms();
+
+// ── LinkedIn finder — dynamic by company ──
+function showLinkedInFinder(jobTitle) {
+  if (!jobTitle) return;
+  const box = document.getElementById('liFinderBox');
+  const container = document.getElementById('liSearchLinks');
+  const company = brandKit.company || '';
+  const keyword = jobTitle.split(' ').slice(0,4).join(' ');
+
+  // Use LinkedIn People Search with company + job title keywords (works for any company)
+  const searchUrl = `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(keyword + (company ? ' ' + company : ''))}`;
+
+  container.innerHTML = `<a href="${searchUrl}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;background:white;border:1px solid #c2d8f5;border-radius:4px;padding:10px 14px;font-size:13px;font-weight:500;color:#2d6bc4;text-decoration:none;">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="#0a66c2"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+    Find "${keyword}"${company ? ' at ' + company : ''} on LinkedIn →</a>`;
+  box.style.display = 'block';
+}
+document.getElementById('dmCopyBtn').addEventListener('click', function() {
+  const jobTitle = document.getElementById('jobTitle').value || 'this role';
+  const team = document.getElementById('team').value || 'your team';
+  const template = `Hi [Name] — I'm working on a recruiting page for our ${jobTitle} opening on the ${team} team. Would you be open to sharing one or two sentences about what you enjoy most about your role? Super low-lift — I can send a few prompts or you can write whatever feels natural. Thanks!`;
+  navigator.clipboard.writeText(template).then(() => {
+    this.textContent = '✓ Copied!';
+    setTimeout(() => { this.textContent = '📋 Copy outreach DM'; }, 2500);
+    document.getElementById('dmStatus').textContent = 'Paste directly into LinkedIn DM';
+    setTimeout(() => { document.getElementById('dmStatus').textContent = ''; }, 3000);
+  });
+});
+
+// ── Section toggles ──
+const REQUIRED_SECTIONS = new Set([]);
+const sectionVisible = {};
+document.querySelectorAll('.form-section-label[data-section]').forEach(label => {
+  const key = label.dataset.section;
+  sectionVisible[key] = true;
+  if (REQUIRED_SECTIONS.has(key)) return;
+  const toggle = document.createElement('label');
+  toggle.className = 'section-toggle';
+  toggle.innerHTML = `<span class="toggle-switch"><input type="checkbox" checked data-key="${key}"><span class="toggle-slider"></span></span><span>Show</span>`;
+  label.appendChild(toggle);
+  const siblings = [];
+  let el = label.nextElementSibling;
+  while (el && !el.classList.contains('form-section-label')) { siblings.push(el); el = el.nextElementSibling; }
+  toggle.querySelector('input[type=checkbox]').addEventListener('change', function() {
+    const on = this.checked;
+    sectionVisible[key] = on;
+    toggle.querySelector('span:last-child').textContent = on ? 'Show' : 'Hide';
+    siblings.forEach(s => s.classList.toggle('section-hidden', !on));
+    updatePreview();
+  });
+});
+
+// ── UTM links ──
+function buildUtmUrl(base, source, medium, campaign) {
+  try { const url = new URL(base); url.searchParams.set('utm_source',source); url.searchParams.set('utm_medium',medium); url.searchParams.set('utm_campaign',campaign); return url.toString(); } catch(e) { return base; }
+}
+function renderUtmLinks() {
+  const base = document.getElementById('pageUrl').value.trim();
+  const box = document.getElementById('utmLinks');
+  if (!base||!base.startsWith('http')) { box.style.display='none'; return; }
+  const campaign = (document.getElementById('jobTitle').value||'role').toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'').slice(0,40);
+  const channels = [{label:'LinkedIn',source:'linkedin',medium:'social',icon:'🔗'},{label:'Email',source:'email',medium:'email',icon:'📧'},{label:'Slack',source:'slack',medium:'internal',icon:'💬'},{label:'Job board',source:'job-board',medium:'referral',icon:'📋'}];
+  document.getElementById('utmLinkList').innerHTML = channels.map(ch => {
+    const url = buildUtmUrl(base,ch.source,ch.medium,campaign);
+    return `<div style="display:flex;align-items:center;gap:8px;background:white;border:1px solid var(--ui-border);border-radius:4px;padding:7px 10px;">
+      <span style="font-size:13px;flex-shrink:0">${ch.icon}</span>
+      <span style="font-size:11px;color:#555;font-weight:500;flex-shrink:0;width:80px">${ch.label}</span>
+      <input type="text" value="${url}" readonly style="flex:1;font-size:10px;font-family:'DM Mono',monospace;border:none;background:transparent;color:#888;outline:none;min-width:0">
+      <button onclick="navigator.clipboard.writeText('${url}');this.textContent='✓';setTimeout(()=>this.textContent='Copy',1500)" style="font-size:11px;font-weight:500;color:var(--brand-primary);background:transparent;border:none;cursor:pointer;flex-shrink:0;">Copy</button>
+    </div>`;
+  }).join('');
+  box.style.display = 'block';
+}
+document.getElementById('pageUrl').addEventListener('input', renderUtmLinks);
+
+// ── Session memory ──
+const SESSION_KEY = 'universal_gen_session';
+// Culture cards + culture title/subtitle excluded from session — always start fresh
+const SESSION_FIELDS = ['jobTitle','team','location','salaryMin','salaryMax','heroHeadline','heroPoppy','heroSub','pill1','pill2','pill3','pill4','ticker1','ticker2','ticker3','ticker4','building','time','techTags','techHighlight','softSkills','required','niceToHave','whyTitle','whyTitlePoppy','why1Title','why1Desc','why1Link1','why1Link2','why2Title','why2Desc','why2Link1','why2Link2','why3Title','why3Desc','why3Link1','why3Link2','why4Title','why4Desc','why4Link1','why4Link2','ctaTitle','ctaSub','ga4Id','pageUrl'];
+function saveSession() { try { const data={}; SESSION_FIELDS.forEach(id=>{ const el=document.getElementById(id); if(el) data[id]=el.value; }); localStorage.setItem(SESSION_KEY,JSON.stringify(data)); } catch(e) {} }
+function restoreSession() { try { const raw=localStorage.getItem(SESSION_KEY); if(!raw) return; const data=JSON.parse(raw); SESSION_FIELDS.forEach(id=>{ if(data[id]!==undefined){ const el=document.getElementById(id); if(el){el.value=data[id];if(data[id])el.classList.add('reviewed');} } }); } catch(e) {} }
+try { restoreSession(); } catch(e) { console.warn('Session restore failed:', e); }
+</script>
+</body>
+</html>
