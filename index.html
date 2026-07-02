@@ -1596,10 +1596,10 @@ document.getElementById('parseBtn').addEventListener('click', async () => {
     updatePreview();
   } catch(e) {
     console.error('[Parse] Error:', e);
+    // Show error prominently — do NOT call showCompletenessScore after or it will overwrite
     showParseError(e.message || 'Unknown error — check browser console (Cmd+Option+I)');
     const jt = text.match(/^(.{4,60}?)(?:\n|$)/m);
     if (jt) { const el=document.getElementById('jobTitle'); if(el&&!el.value){el.value=jt[1].trim();el.classList.add('autofilled');} }
-    showCompletenessScore();
     updatePreview();
   } finally {
     parseBtn.disabled = false;
