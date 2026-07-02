@@ -809,12 +809,14 @@ document.getElementById('exampleDropdown').addEventListener('click', function(e)
   Object.assign(brandKit, ex.brandKit);
   saveBrandKit();
   applyBrandKit();
-  // Apply form fields
+  // Apply form fields — marked autofilled (yellow) so user knows they're from the example
   const v = ex.form;
   Object.entries(v).forEach(([id, val]) => {
     const el = document.getElementById(id);
-    if (el) { el.value = val; el.classList.add('reviewed'); }
+    if (el) { el.value = val; el.classList.remove('reviewed'); el.classList.add('autofilled'); }
   });
+  // Save session so these persist (user can then edit and override)
+  saveSession();
   // Load persona preset
   document.getElementById('personaText').value = brandKit.voice;
   document.getElementById('personaText').style.color = '#b0aeac';
@@ -1254,7 +1256,15 @@ ${d.ga4Id ? `<script>document.querySelectorAll('a[href*="apply"], .sidebar-apply
 }
 
 function updatePreview() {
-  document.getElementById('preview').srcdoc = generatePage(collectData());
+  const preview = document.getElementById('preview');
+  // Always reset iframe to editor mode — clear any live URL and restore sandbox
+  if (preview.src && !preview.src.includes('about:')) {
+    preview.removeAttribute('src');
+  }
+  if (!preview.getAttribute('sandbox')) {
+    preview.setAttribute('sandbox', 'allow-same-origin allow-scripts');
+  }
+  preview.srcdoc = generatePage(collectData());
 }
 
 // ── Input listeners ──
