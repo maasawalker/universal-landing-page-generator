@@ -236,7 +236,7 @@ body{font-family:'Instrument Sans',sans-serif;background:var(--brand-light);heig
           </button>
           <button data-example="amazon" style="width:100%;text-align:left;padding:11px 16px;background:transparent;border:none;color:rgba(255,255,255,.8);font-family:'Instrument Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;display:flex;flex-direction:column;gap:2px;" onmouseover="this.style.background='rgba(255,255,255,.06)'" onmouseout="this.style.background='transparent'">
             <span>Amazon</span>
-            <span style="font-size:11px;color:rgba(255,255,255,.4);font-weight:400;">— add JD to activate —</span>
+            <span style="font-size:11px;color:rgba(255,255,255,.4);font-weight:400;">Warehouse Associate</span>
           </button>
         </div>
       </div>
@@ -498,7 +498,7 @@ const EXAMPLES = {
         voice: 'Hourly warehouse and delivery associates care about: reliable pay (up to $22.25/hr), schedule flexibility, physical work in a team environment, benefits on day one, and a clear path to advancement. They are practical, hardworking, and motivated by stability and fair treatment. They respond to: transparency about pay and hours, safety commitments, real benefits (not vague promises), and a sense of belonging. Red flags: bait-and-switch schedules, hidden requirements, corporate buzzwords. Tone: clear, direct, warm, human. No jargon. Lead with pay and schedule. Emphasize team and safety.',
         fonts: typeof window.AMAZON_FONTS !== 'undefined' ? window.AMAZON_FONTS : [],
         fontDataUrl: typeof window.AMAZON_FONTS !== 'undefined' && window.AMAZON_FONTS.length ? window.AMAZON_FONTS.find(f=>f.weight===400&&!f.italic)?.dataUrl || '' : '',
-        logoDataUrl: typeof window.AMAZON_LOGO !== 'undefined' ? window.AMAZON_LOGO : ''
+        logoDataUrl: typeof window.AMAZON_LOGO_SRC !== 'undefined' ? window.AMAZON_LOGO_SRC : ''
       },
       form: {
         jobTitle:'Delivery Station Warehouse Associate', team:'Fulfillment & Operations', location:'Westhampton Beach, NY 11978',
@@ -607,11 +607,11 @@ function applyBrandKit() {
     }
   }
 
-  // Logo in app header
+  // Logo in app header — supports both data URLs and external URLs
   const logoImg = document.getElementById('appLogoImg');
   const logoText = document.getElementById('appLogoText');
   if (brandKit.logoDataUrl) {
-    logoImg.src = brandKit.logoDataUrl;
+    logoImg.src = brandKit.logoDataUrl; // works for both data: and https: URLs
     logoImg.style.display = 'block';
     logoText.style.display = 'none';
   } else if (brandKit.company) {
@@ -1008,7 +1008,7 @@ nav{background:var(--dark);padding:0 48px;height:68px;display:flex;align-items:c
 .nav-cta:hover{opacity:.88}
 .hero{background:var(--dark);padding:54px 0 50px}
 .hero-content{max-width:780px;position:relative;padding-right:0}
-.hero-eyebrow{font-family:'Instrument Sans',sans-serif;font-size:12px;font-weight:600;letter-spacing:.08em;color:var(--bp);text-transform:uppercase;margin-bottom:24px;font-style:normal;animation:fadeUp .6s ease both;animation-delay:.1s}
+.hero-eyebrow{font-family:var(--fh);font-size:12px;font-weight:600;letter-spacing:.08em;color:var(--bp);text-transform:uppercase;margin-bottom:24px;font-style:normal !important;animation:fadeUp .6s ease both;animation-delay:.1s}
 .hero-title{font-family:var(--fh);font-weight:400;font-size:clamp(40px,5.5vw,72px);line-height:1.05;letter-spacing:-.025em;color:#fff;margin-bottom:28px;animation:dropIn .8s cubic-bezier(.22,1,.36,1) both;animation-delay:.25s}
 .hero-title em{font-style:italic;color:var(--bp)}
 .hero-sub{font-size:17px;color:rgba(255,255,255,.68);max-width:100%;line-height:1.65;margin-bottom:40px;animation:fadeUp .7s ease both;animation-delay:.6s}
@@ -1028,7 +1028,7 @@ nav{background:var(--dark);padding:0 48px;height:68px;display:flex;align-items:c
 @keyframes dropIn{0%{opacity:0;transform:translateY(-28px)}60%{opacity:1;transform:translateY(3px)}100%{opacity:1;transform:translateY(0)}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 section{padding:52px 0}
-.section-eyebrow{font-family:'Instrument Sans',sans-serif;font-size:11px;font-weight:600;letter-spacing:.08em;color:var(--bp);text-transform:uppercase;margin-bottom:16px;font-style:normal}
+.section-eyebrow{font-family:var(--fh);font-size:11px;font-weight:600;letter-spacing:.08em;color:var(--bp);text-transform:uppercase;margin-bottom:16px;font-style:normal !important}
 .section-title{font-family:var(--fh);font-weight:600;font-size:clamp(28px,3.5vw,44px);line-height:1.1;letter-spacing:-.02em;color:var(--dark);margin-bottom:20px;font-style:normal}
 .why{background:var(--light)}
 .why-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:2px;margin-top:32px}
@@ -1042,7 +1042,7 @@ section{padding:52px 0}
 .role .section-title{color:#fff}
 .role-layout{display:grid;grid-template-columns:1fr 280px;gap:60px;align-items:start}
 .role-section{margin-bottom:28px}
-.role-section-label{font-family:'Instrument Sans',sans-serif;font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--bp);text-transform:uppercase;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.1);font-style:normal}
+.role-section-label{font-family:var(--fh);font-size:11px;font-weight:600;letter-spacing:.06em;color:var(--bp);text-transform:uppercase;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.1);font-style:normal !important}
 .role-list{list-style:none}
 .role-list li{padding:10px 0 10px 20px;font-size:15px;line-height:1.6;color:rgba(255,255,255,.8);border-bottom:1px solid rgba(255,255,255,.05);position:relative}
 .role-list li::before{content:'';position:absolute;left:0;top:20px;width:6px;height:6px;background:var(--bp);border-radius:50%}
